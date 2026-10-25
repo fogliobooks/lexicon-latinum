@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lexicon Latinum</title>
+<meta name="description" content="Latin–English dictionary with full declensions, conjugations and grammar: Lewis & Short + Whitaker's Words.">
+<meta name="theme-color" content="#f6f1e7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1a17" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Lexicon">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="top">
+  <div class="bar">
+    <button id="back" class="iconbtn" aria-label="Back" hidden>‹</button>
+    <form id="searchform" role="search" autocomplete="off">
+      <input id="q" type="search" placeholder="Search Latin or English (e.g. amicus, amicorum, friend)" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" inputmode="search">
+      <button type="button" id="clearq" class="iconbtn" aria-label="Clear" hidden>×</button>
+    </form>
+  </div>
+</header>
+<main id="view" aria-live="polite"></main>
+<nav id="tabs">
+  <a href="#/" data-tab="home"><span class="ic">⌕</span>Search</a>
+  <a href="#/g" data-tab="grammar"><span class="ic">¶</span>Grammar</a>
+  <a href="#/saved" data-tab="saved"><span class="ic">★</span>Saved</a>
+  <a href="#/settings" data-tab="settings"><span class="ic">⚙</span>Settings</a>
+</nav>
+<div id="sheet" class="sheet" hidden><div class="sheet-bg"></div><div class="sheet-box" role="dialog" aria-modal="true"><div class="sheet-head"><div class="sheet-handle"></div><button class="iconbtn sheet-close" aria-label="Close">×</button></div><div class="sheet-body"></div></div></div>
+<div id="toast" hidden></div>
+<script src="morph.js"></script>
+<script src="macrons.js"></script>
+<script src="content/core.js"></script>
+<script src="content/packs-nouns.js"></script>
+<script src="content/packs-verbs.js"></script>
+<script src="content/packs-pron.js"></script>
+<script src="content/grammar.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
