@@ -6,7 +6,7 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const load = (k, d) => { try { const v = localStorage.getItem('lx.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
   const save = (k, v) => { try { localStorage.setItem('lx.' + k, JSON.stringify(v)); } catch (e) { } };
-  const S = { settings: Object.assign({ macrons: true, rare: false, cit: true, theme: 'auto', fs: 16 }, load('settings', {})), history: load('history', []), favs: load('favs', []) };
+  const S = { settings: Object.assign({ macrons: true, rare: false, cit: true, theme: 'auto', font: 'mixed', fs: 16 }, load('settings', {})), history: load('history', []), favs: load('favs', []) };
   const norm = s => Morph.norm(s.normalize('NFD').replace(/[̀-ͯ]/g, '')).replace(/[^a-z' -]/g, '');
   const strip = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
 
@@ -370,13 +370,15 @@
       <div class="setting"><div><b>Macrons</b><div class="d">Mark long vowels (ā ē ī ō ū) in headwords and tables.</div></div><button class="btn ${s.macrons ? 'on' : ''}" data-set="macrons">${s.macrons ? 'On' : 'Off'}</button></div>
       <div class="setting"><div><b>Rare &amp; archaic forms</b><div class="d">Show poetic, archaic and late variants (greyed) and the locative.</div></div><button class="btn ${s.rare ? 'on' : ''}" data-set="rare">${s.rare ? 'On' : 'Off'}</button></div>
       <div class="setting"><div><b>Citations in Lewis &amp; Short</b><div class="d">Show the quotations and author references by default.</div></div><button class="btn ${s.cit ? 'on' : ''}" data-set="cit">${s.cit ? 'On' : 'Off'}</button></div>
-      <div class="setting"><div><b>Theme</b></div><select id="theme"><option value="auto" ${s.theme === 'auto' ? 'selected' : ''}>Automatic</option><option value="light" ${s.theme === 'light' ? 'selected' : ''}>Light</option><option value="dark" ${s.theme === 'dark' ? 'selected' : ''}>Dark</option></select></div>
+      <h2>Theme</h2><div class="swatches">${SKINS.map(([id, name, desc]) => `<button class="swatch ${s.theme === id ? 'on' : ''}" data-skin="${id}" title="${esc(desc)}"><div class="pv" style="background:${SKIN_PREVIEW[id][0]};color:${SKIN_PREVIEW[id][1]}">Aa āē</div><div class="nm">${esc(name)}</div></button>`).join('')}</div>
+      <h2>Typeface</h2><div class="fontpick">${[['mixed', 'Mixed', 'EB Garamond for Latin, system sans for the rest'], ['serif', 'Serif', 'EB Garamond everywhere'], ['sans', 'Sans', 'System sans everywhere']].map(([id, name, desc]) => `<button class="${s.font === id ? 'on' : ''}" data-font="${id}"><span class="big" style="font-family:${id === 'sans' ? 'var(--sans-stack)' : 'var(--serif-stack)'}">${esc(name)} · amīcus</span><span class="sm">${esc(desc)}</span></button>`).join('')}</div>
       <div class="setting"><div><b>Text size</b></div><input type="range" id="fs" min="14" max="22" step="1" value="${s.fs}"></div>
       <div class="setting"><div><b>Offline data</b><div class="d">Download the whole dictionary (about 80 MB) so lookups work without a connection. Looked-up words are cached automatically anyway.</div></div><button class="btn" id="dlall">Download all</button></div>
       <div class="setting"><div><b>Clear cached data</b><div class="d">Removes downloaded dictionary chunks (not your saved words).</div></div><button class="btn" id="clearcache">Clear</button></div>
       <h2>About</h2><p class="small">Lexicon Latinum combines <b>Lewis &amp; Short, A Latin Dictionary</b> (Oxford 1879; Perseus Digital Library edition, CC BY-SA 4.0) with the morphological data of <b>Whitaker's Words</b> (public domain). Every table is generated from Whitaker's stems and ending tables; vowel lengths on stems come from Lewis &amp; Short where the headwords match, and endings follow the standard quantities. Hidden quantities (as in rēxī) cannot be recovered automatically.</p><p class="small">Grammar notes and example sentences were written for this app and are keyed to the declension or conjugation of the word you look up.</p><p class="small muted">Data built ${Data.meta ? esc(Data.meta.built) : ''}.</p>`;
     view.querySelectorAll('[data-set]').forEach(b => b.onclick = () => { s[b.dataset.set] = !s[b.dataset.set]; save('settings', s); renderSettings(); });
-    $('#theme').onchange = ev => { s.theme = ev.target.value; save('settings', s); applyTheme(); };
+    view.querySelectorAll('.swatch').forEach(b => b.onclick = () => { s.theme = b.dataset.skin; save('settings', s); applyTheme(); view.querySelectorAll('.swatch').forEach(x => x.classList.toggle('on', x === b)); });
+    view.querySelectorAll('.fontpick button').forEach(b => b.onclick = () => { s.font = b.dataset.font; save('settings', s); applyTheme(); view.querySelectorAll('.fontpick button').forEach(x => x.classList.toggle('on', x === b)); });
     $('#fs').oninput = ev => { s.fs = +ev.target.value; save('settings', s); applyTheme(); };
     $('#dlall').onclick = downloadAll;
     $('#clearcache').onclick = async () => { await DB.clear(); for (const k in mem) delete mem[k]; toast('Cache cleared'); };
@@ -391,8 +393,17 @@
     if (btn) btn.textContent = 'Done';
     toast('All data downloaded for offline use');
   }
-  let themeSetByUs = false;
-  function applyTheme() { const r = document.documentElement; if (S.settings.theme === 'auto') { if (themeSetByUs) { delete r.dataset.theme; themeSetByUs = false; } } else { r.dataset.theme = S.settings.theme; themeSetByUs = true; } r.style.setProperty('--fs', S.settings.fs + 'px'); }
+  const SKINS = [['auto', 'Automatic', 'Parchment by day, Night in dark mode'], ['parchment', 'Parchment', 'Warm cream and oxblood'], ['night', 'Night', 'Dark, warm neutrals'], ['navy', 'Navy Neon', 'Deep blue with neon mint'], ['peach', 'Peach', 'Soft apricot and terracotta'], ['blush', 'Blush', 'Rose pink'], ['sage', 'Sage', 'Cool greens'], ['ember', 'Ember', 'Charcoal with amber']];
+  const SKIN_PREVIEW = { auto: ['#f6f1e7', '#8b2e2e'], parchment: ['#f6f1e7', '#8b2e2e'], night: ['#1b1a17', '#e08a8a'], navy: ['#0a1730', '#3dffc6'], peach: ['#fff0e4', '#df6b35'], blush: ['#fceff4', '#d4336e'], sage: ['#edf3ea', '#2e6b4e'], ember: ['#1d1a1f', '#ff9d3f'] };
+  function applyTheme() {
+    const r = document.documentElement; const t = S.settings.theme;
+    if (t === 'auto' || t === 'light' || t === 'dark') { delete r.dataset.skin; if (t === 'light' || t === 'dark') { S.settings.theme = t === 'light' ? 'parchment' : 'night'; r.dataset.skin = S.settings.theme; } }
+    else r.dataset.skin = t;
+    if (S.settings.font === 'mixed') delete r.dataset.font; else r.dataset.font = S.settings.font;
+    if (window.LX_EMBEDDED) r.dataset.embedded = '1';
+    r.style.setProperty('--fs', S.settings.fs + 'px');
+    requestAnimationFrame(() => { const bg = getComputedStyle(r).getPropertyValue('--bg').trim(); document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', bg)); });
+  }
 
   // ---------------- grammar ----------------
   const GRAM = typeof GRAMMAR !== 'undefined' ? GRAMMAR : [];
@@ -550,7 +561,11 @@
   // double-tap on a Latin word inside L&S quotes or tables: look it up
   view.addEventListener('dblclick', ev => { const sel = (window.getSelection() + '').trim(); if (sel && /^[A-Za-zāēīōūȳ]+$/.test(sel)) { location.hash = '#/s/' + encodeURIComponent(sel.toLowerCase()); } });
   applyTheme();
-  if (!window.LX_EMBEDDED && 'serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => { }); }
+  if (!window.LX_EMBEDDED && 'serviceWorker' in navigator) {
+    let hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) { toast('Updating to the latest version…'); setTimeout(() => location.reload(), 600); } hadController = true; });
+    navigator.serviceWorker.register('sw.js').then(reg => { setInterval(() => reg.update().catch(() => { }), 60 * 60 * 1000); }).catch(() => { });
+  }
   navStack.push(location.hash || '#/');
   route();
 })();
