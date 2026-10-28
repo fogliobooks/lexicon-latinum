@@ -1,7 +1,7 @@
 /* Lexicon Latinum — app logic */
 (function () {
   'use strict';
-  const APP_BUILD = '2026-10-28.1123';
+  const APP_BUILD = '2026-10-28.1127';
   const $ = s => document.querySelector(s);
   const view = $('#view');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -1049,7 +1049,7 @@
   // ---- tab bar: hidden on content pages and when scrolling down; swipe up from the bottom or tap the handle to bring it back ----
   const tabsEl = $('#tabs'); let tabsOn = true, lastY = 0;
   function setTabs(on) { tabsOn = on; tabsEl.classList.toggle('off', !on); document.body.classList.toggle('tabs-off', !on); document.documentElement.style.setProperty('--barspace', on ? '96px' : '22px'); }
-  view.addEventListener('scroll', () => { const y = view.scrollTop; const dy = y - lastY; if (view.classList.contains('fit')) return; if (dy > 10 && tabsOn && y > 40) setTabs(false); else if (dy < -10 && !tabsOn) setTabs(true); lastY = y; }, { passive: true });
+  view.addEventListener('scroll', () => { const y = view.scrollTop; const dy = y - lastY; if (view.classList.contains('fit')) return; if (dy > 8 && tabsOn && y > 24) setTabs(false); else if (dy < -10 && !tabsOn) setTabs(true); lastY = y; }, { passive: true });
   $('#tabhandle').addEventListener('click', () => setTabs(true));
   let swipeY = null; document.addEventListener('touchstart', ev => { const t = ev.touches[0]; swipeY = t.clientY > window.innerHeight - 70 ? t.clientY : null; }, { passive: true });
   document.addEventListener('touchmove', ev => { if (swipeY === null) return; if (swipeY - ev.touches[0].clientY > 24) { setTabs(true); swipeY = null; } }, { passive: true });
