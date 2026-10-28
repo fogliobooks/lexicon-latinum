@@ -1,7 +1,7 @@
 /* Lexicon Latinum — app logic */
 (function () {
   'use strict';
-  const APP_BUILD = '2026-10-28.0241';
+  const APP_BUILD = '2026-10-28.0253';
   const $ = s => document.querySelector(s);
   const view = $('#view');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -501,7 +501,7 @@
     if (S.settings.font === 'mixed') delete r.dataset.font; else r.dataset.font = S.settings.font;
     if (window.LX_EMBEDDED) r.dataset.embedded = '1';
     r.style.setProperty('--fs', S.settings.fs + 'px');
-    requestAnimationFrame(() => { const bg = getComputedStyle(r).getPropertyValue('--bg').trim(); document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', bg)); });
+    requestAnimationFrame(() => { const cs = getComputedStyle(r); const bg = (cs.getPropertyValue('--hdr') || cs.getPropertyValue('--bg')).trim() || cs.getPropertyValue('--bg').trim(); document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', bg)); });
   }
 
   // ---------------- artwork ----------------
@@ -533,7 +533,7 @@
     view.innerHTML = html; window.scrollTo(0, 0);
     $('#trbtn').onclick = () => { const ps = $('#passage'); ps.classList.toggle('showtr'); $('#trbtn').textContent = ps.classList.contains('showtr') ? 'Hide translation' : 'Show translation'; };
     $('#donebtn').onclick = () => { const r = load('read', { done: [], last: null }); if (r.done.includes(id)) r.done = r.done.filter(x => x !== id); else r.done.push(id); save('read', r); const on = r.done.includes(id); $('#donebtn').textContent = on ? 'Read ✓' : 'Mark as read'; $('#donebtn').classList.toggle('on', on); if (on) toast('Marked as read'); };
-    $('#passage').onclick = ev => { const w = ev.target.closest('.w'); if (!w) return; ev.stopPropagation(); $('#passage').querySelectorAll('.w.on').forEach(x => x.classList.remove('on')); w.classList.add('on'); wordPop(w); };
+    $('#passage').onclick = ev => { const w = ev.target.closest('.w'); if (!w) return; ev.stopPropagation(); if (w.classList.contains('on') && popEl) { closePop(); return; } $('#passage').querySelectorAll('.w.on').forEach(x => x.classList.remove('on')); w.classList.add('on'); wordPop(w); };
   }
   async function glossData(word) {
     await Data.ready; const nq = norm(word); const L = letterOf(nq);
