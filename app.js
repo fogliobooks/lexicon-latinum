@@ -615,6 +615,9 @@
   });
   // double-tap on a Latin word inside L&S quotes or tables: look it up
   view.addEventListener('dblclick', ev => { const sel = (window.getSelection() + '').trim(); if (sel && /^[A-Za-zāēīōūȳ]+$/.test(sel)) { location.hash = '#/s/' + encodeURIComponent(sel.toLowerCase()); } });
+  // no pinch or double-tap zoom: the app sets its own text size in Settings
+  document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+  let lastTap = 0; document.addEventListener('touchend', e => { const now = Date.now(); if (now - lastTap < 300 && !e.target.closest('input, textarea')) e.preventDefault(); lastTap = now; }, { passive: false });
   applyTheme();
   if (!window.LX_EMBEDDED && 'serviceWorker' in navigator) {
     let hadController = !!navigator.serviceWorker.controller;
