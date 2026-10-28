@@ -1,7 +1,7 @@
 /* Lexicon Latinum — app logic */
 (function () {
   'use strict';
-  const APP_BUILD = '2026-10-28.1117';
+  const APP_BUILD = '2026-10-28.1123';
   const $ = s => document.querySelector(s);
   const view = $('#view');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -575,7 +575,7 @@
   }
   function placePop(wEl) {
     let r = wEl.getBoundingClientRect(); const pw = popEl.offsetWidth || 300; const ph = popEl.offsetHeight || 80;
-    const barTop = window.innerHeight - 96 - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sab')) || 0);
+    const barTop = window.innerHeight - (tabsOn ? 96 : 22) - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sab')) || 0);
     if (r.bottom > barTop - 8) { view.scrollBy({ top: r.bottom - (barTop - 8), left: 0, behavior: 'instant' }); r = wEl.getBoundingClientRect(); }
     const vw = document.documentElement.clientWidth; const headerH = ($('#top') ? $('#top').getBoundingClientRect().bottom : 0);
     let left = r.left + r.width / 2 - pw / 2; left = Math.max(12, Math.min(vw - pw - 12, left));
@@ -616,7 +616,7 @@
   async function makeWordPairs() {
     const pool = G.source === 'saved' && S.favs.length >= 4 ? S.favs.map(f => f.nk) : WOTD.slice();
     const picks = shuffle(pool.slice()).slice(0, 12); const pairs = [];
-    for (const nk of picks) { const r = await idxRecord(norm(nk)); if (!r) continue; const en = r[3].split(/;/)[0].split(/,/)[0].replace(/\(.*?\)/g, '').trim(); if (!en || en.length > 30) continue; const la = S.settings.macrons ? r[1] : strip(r[1]); if (pairs.some(p => p.en.toLowerCase() === en.toLowerCase() || p.la === la)) continue; pairs.push({ la, en, nk: r[0] }); if (pairs.length === 5) break; }
+    for (const nk of picks) { const r = await idxRecord(norm(nk)); if (!r) continue; const en = r[3].split(/;/)[0].split(/,/)[0].replace(/\(.*?\)/g, '').split('/').slice(0, 2).map(x => x.trim()).filter(Boolean).join(', ').trim(); if (!en || en.length > 26) continue; const la = S.settings.macrons ? r[1] : strip(r[1]); if (pairs.some(p => p.en.toLowerCase() === en.toLowerCase() || p.la === la)) continue; pairs.push({ la, en, nk: r[0] }); if (pairs.length === 5) break; }
     return pairs;
   }
   async function makeFormPairs() {
@@ -660,7 +660,7 @@
     $('#board').innerHTML = `<div class="done" style="grid-column:1/-1"><div class="big">${secs.toFixed(1)}s</div><p>${G.wrong ? `${G.wrong} slip${G.wrong === 1 ? '' : 's'}` : 'Perfect round!'} · best ${st.best.toFixed(1)}s</p><p><button class="btn primary" id="again">Next round</button> ${G.pairs[0] && G.mode === 'words' ? `<a class="btn" href="#/w/${encodeURIComponent(G.pairs[0].nk)}">Look up a word</a>` : ''}</p><p class="similar">${G.pairs.map(p => `<a href="#/w/${encodeURIComponent(p.nk)}"><span class="la">${esc(p.la)}</span><span class="gl">${esc(p.en)}</span></a>`).join('')}</p></div>`;
     $('#again').onclick = newRound; renderStats();
   }
-  function renderStats() { const st = load('stats', { rounds: 0, best: 0, streak: 0 }); const el = $('#gstats'); if (el) el.innerHTML = `<div><b>${st.rounds}</b><span>rounds</span></div><div><b>${st.best ? st.best.toFixed(1) + 's' : '—'}</b><span>best</span></div><div><b>${st.streak || 0}</b><span>day streak</span></div><div><b id="gtime">0s</b><span>time</span></div>`; }
+  function renderStats() { const st = load('stats', { rounds: 0, best: 0, streak: 0 }); const el = $('#gstats'); if (el) el.innerHTML = `<div><b>${st.rounds}</b><span>rounds</span></div><div><b>${st.best ? st.best.toFixed(1) + 's' : '—'}</b><span>best</span></div><div><b>${st.streak || 0}</b><span>streak</span></div><div><b id="gtime">0s</b><span>time</span></div>`; }
   // ---- cloze (fill the blanks) ----
   const C = { p: null, blanks: [], cur: 0, right: 0, wrong: 0 };
   function renderCloze(id) {
@@ -690,7 +690,7 @@
   }
   function renderMatch(kind) {
     if (kind === 'saved') G.source = 'saved'; if (kind === 'forms') G.mode = 'forms'; if (kind === 'match') G.mode = 'words';
-    view.innerHTML = `${crumb('Pāria')}<div class="game-top"><h1 style="margin:0">Pāria</h1><div class="seg" id="modeseg"><button data-m="words" class="${G.mode === 'words' ? 'on' : ''}">Words</button><button data-m="forms" class="${G.mode === 'forms' ? 'on' : ''}">Forms</button></div></div><div class="game-top"><p class="small muted" style="margin:0">${G.mode === 'words' ? 'Tap a Latin word, then its meaning.' : 'Tap a form, then the case or tense it belongs to.'}</p>${G.mode === 'words' ? `<div class="seg" id="srcseg"><button data-s="common" class="${G.source === 'common' ? 'on' : ''}">Common</button><button data-s="saved" class="${G.source === 'saved' ? 'on' : ''}" ${S.favs.length < 4 ? 'disabled title="Save at least 4 words first"' : ''}>Saved</button></div>` : ''}</div><div class="stat" id="gstats"></div><div class="board" id="board"></div>`;
+    view.innerHTML = `${crumb('Pāria')}<div class="game-top"><h1 style="margin:0">Pāria</h1><div class="seg" id="modeseg"><button data-m="words" class="${G.mode === 'words' ? 'on' : ''}">Words</button><button data-m="forms" class="${G.mode === 'forms' ? 'on' : ''}">Forms</button></div></div><div class="game-top"><p class="small muted" style="margin:0">${G.mode === 'words' ? 'Tap a Latin word, then its meaning.' : 'Tap a form, then the case or tense it belongs to.'}</p>${G.mode === 'words' ? `<div class="seg" id="srcseg"><button data-s="common" class="${G.source === 'common' ? 'on' : ''}">Common</button><button data-s="saved" class="${G.source === 'saved' ? 'on' : ''}" ${S.favs.length < 4 ? 'disabled title="Save at least 4 words first"' : ''}>Saved</button></div>` : ''}</div><div class="stat" id="gstats"></div><div class="grow"><div class="board" id="board"></div></div>`;
     renderStats();
     $('#modeseg').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; G.mode = b.dataset.m; renderMatch(); };
     const ss = $('#srcseg'); if (ss) ss.onclick = ev => { const b = ev.target.closest('button'); if (!b || b.disabled) return; G.source = b.dataset.s; renderMatch(); };
@@ -754,7 +754,8 @@
       const won = VB.rows[VB.rows.length - 1] === VB.ans[0];
       end = `<div class="card done gend"><div class="big la">${esc(VB.ans[1])}</div><p>${esc(VB.ans[2])}</p><p class="small muted">${won ? `Solved in ${VB.rows.length} ${VB.rows.length === 1 ? 'try' : 'tries'}.` : 'Not this time.'}</p><p><a class="btn primary" href="#/w/${encodeURIComponent(norm(VB.ans[1]))}">Open entry</a> <button class="btn" id="vshare">Share</button> ${VB.daily ? '<button class="btn" id="vrandom">Play a random word</button>' : '<button class="btn" id="vrandom">Another word</button>'}</p></div>`;
     }
-    view.innerHTML = `${crumb('Verbum')}<div class="game-top"><h1 style="margin:0">Verbum</h1><div class="seg" id="vseg"><button data-d="1" class="${VB.daily ? 'on' : ''}">Daily</button><button data-d="0" class="${VB.daily ? '' : 'on'}">Random</button></div></div><p class="small muted">A five-letter Latin dictionary word. Any Latin form of five letters counts as a guess. Write u for both u and v, and i for j.</p><div class="vgrid" id="vgrid">${grid}</div>${end}${keyboardHTML(KB_ROWS, VB.keys)}${stats}`;
+    view.innerHTML = `${crumb('Verbum')}<div class="game-top"><h1 style="margin:0">Verbum</h1><div class="seg" id="vseg"><button data-d="1" class="${VB.daily ? 'on' : ''}">Daily</button><button data-d="0" class="${VB.daily ? '' : 'on'}">Random</button></div></div><p class="small muted one">Five letters, six tries. Any Latin form counts; write u for v and i for j.</p><div class="grow"><div class="vgrid" id="vgrid">${grid}</div></div>${VB.done ? end + stats : keyboardHTML(KB_ROWS, VB.keys)}`;
+    fitCells($('#vgrid'), 6, 5, 6, 60, '--vc');
     $('#vseg').onclick = ev => { const b = ev.target.closest('button'); if (b) verbumStart(b.dataset.d === '1'); };
     view.querySelector('.kb').onclick = ev => { const b = ev.target.closest('button'); if (b) verbumKey(b.dataset.k); };
     const sh = $('#vshare'); if (sh) sh.onclick = () => { const txt = `Verbum ${VB.daily ? 'diēī ' + new Date().toISOString().slice(0, 10) : ''} ${VB.rows[VB.rows.length - 1] === VB.ans[0] ? VB.rows.length : 'X'}/6\n` + VB.rows.map(r => verbumScore(r).replace(/g/g, '🟩').replace(/y/g, '🟨').replace(/x/g, '⬜')).join('\n') + '\nlexicon latinum'; if (navigator.share) navigator.share({ text: txt }).catch(() => {}); else if (navigator.clipboard) { navigator.clipboard.writeText(txt); toast('Copied'); } };
@@ -790,14 +791,14 @@
   }
   function nexusDraw() {
     const p = NX.p; const left = NX.order.filter(x => !NX.solved.includes(x.gi));
-    let html = `${crumb('Nexus')}<div class="game-top"><h1 style="margin:0">Nexus</h1><div class="seg" id="nseg"><button data-d="1" class="${NX.daily ? 'on' : ''}">Daily</button><button data-d="0" class="${NX.daily ? '' : 'on'}">Random</button></div></div><p class="small muted">Select four words that belong together, then press Submit. Four groups, four mistakes allowed.</p>`;
-    html += `<div class="nxsolved">${NX.solved.map(gi => `<div class="nxgroup l${p.groups[gi][1]}"><b>${esc(p.groups[gi][0])}</b><span class="la">${p.groups[gi][2].map(esc).join(', ')}</span></div>`).join('')}</div>`;
+    let html = `${crumb('Nexus')}<div class="game-top"><h1 style="margin:0">Nexus</h1><div class="seg" id="nseg"><button data-d="1" class="${NX.daily ? 'on' : ''}">Daily</button><button data-d="0" class="${NX.daily ? '' : 'on'}">Random</button></div></div><p class="small muted one">Find four groups of four. Four mistakes allowed.</p>`;
+    html += `<div class="grow" style="--nxr:${4 - NX.solved.length}"><div class="nxsolved">${NX.solved.map(gi => `<div class="nxgroup l${p.groups[gi][1]}"><b>${esc(p.groups[gi][0])}</b><span class="la">${p.groups[gi][2].map(esc).join(', ')}</span></div>`).join('')}</div>`;
     if (!NX.over) {
       html += `<div class="nxgrid">${left.map(x => `<button class="nxw la ${NX.sel.includes(x.w) ? 'sel' : ''}" data-w="${esc(x.w)}">${esc(x.w)}</button>`).join('')}</div>`;
-      html += `<p class="small muted nxlives">Mistakes left: ${'●'.repeat(4 - NX.mistakes)}${'○'.repeat(NX.mistakes)}</p><p class="nxbtns"><button class="btn" id="nxshuf">Shuffle</button><button class="btn" id="nxclear">Deselect</button><button class="btn primary" id="nxsub" ${NX.sel.length === 4 ? '' : 'disabled'}>Submit</button></p>`;
+      html += `</div><p class="small muted nxlives">Mistakes left: ${'●'.repeat(4 - NX.mistakes)}${'○'.repeat(NX.mistakes)}</p><p class="nxbtns"><button class="btn" id="nxshuf">Shuffle</button><button class="btn" id="nxclear">Deselect</button><button class="btn primary" id="nxsub" ${NX.sel.length === 4 ? '' : 'disabled'}>Submit</button></p>`;
     } else {
       const won = NX.solved.length === 4; const g = gstat().nexus || {};
-      html += `<div class="card done gend"><div class="big">${won ? (NX.mistakes === 0 ? 'Perfect!' : 'Solved') : 'Next time'}</div><p class="small muted">${won ? `${NX.mistakes} mistake${NX.mistakes === 1 ? '' : 's'}.` : 'The groups are shown above.'}</p><p><button class="btn primary" id="nxanother">${NX.daily ? 'Play a random puzzle' : 'Another puzzle'}</button></p></div><div class="stat"><div><b>${g.played || 0}</b><span>played</span></div><div><b>${g.won || 0}</b><span>solved</span></div><div><b>${g.perfect || 0}</b><span>perfect</span></div><div><b>${g.streak || 0}</b><span>streak</span></div></div>`;
+      html += `</div><div class="card done gend"><div class="big">${won ? (NX.mistakes === 0 ? 'Perfect!' : 'Solved') : 'Next time'}</div><p class="small muted">${won ? `${NX.mistakes} mistake${NX.mistakes === 1 ? '' : 's'}.` : 'The groups are shown above.'}</p><p><button class="btn primary" id="nxanother">${NX.daily ? 'Play a random puzzle' : 'Another puzzle'}</button></p></div><div class="stat"><div><b>${g.played || 0}</b><span>played</span></div><div><b>${g.won || 0}</b><span>solved</span></div><div><b>${g.perfect || 0}</b><span>perfect</span></div><div><b>${g.streak || 0}</b><span>streak</span></div></div>`;
     }
     view.innerHTML = html;
     $('#nseg').onclick = ev => { const b = ev.target.closest('button'); if (b) nexusStart(b.dataset.d === '1'); };
@@ -847,9 +848,9 @@
     const n = CR.letters.length; const R = 92;
     const ring = `<div class="ring" id="ring">${CR.letters.map((ch, k) => { const a = -Math.PI / 2 + k * 2 * Math.PI / n; return `<button class="rl ${CR.cur.includes(k) ? 'on' : ''}" data-k="${k}" style="left:${(50 + 50 * Math.cos(a) * R / 110).toFixed(1)}%;top:${(50 + 50 * Math.sin(a) * R / 110).toFixed(1)}%">${ch}</button>`; }).join('')}<div class="ringc">${done ? '✓' : ''}</div></div>`;
     const foundList = [...CR.found, ...CR.bonus].sort().map(w => `<span class="chip la" title="${esc((p.dict[w] || [])[1] || '')}"><b>${esc(w)}</b> ${esc((p.dict[w] || [])[1] || '')}</span>`).join('');
-    view.innerHTML = `${crumb('Corōna')}<div class="game-top"><h1 style="margin:0">Corōna <span class="muted small">${CR.i + 1} / ${CORONA_ALL.length}</span></h1><div class="seg"><button id="crprev" ${CR.i === 0 ? 'disabled' : ''}>‹</button><button id="crnext" ${CR.i >= CORONA_ALL.length - 1 ? 'disabled' : ''}>›</button></div></div><p class="small muted">Join the letters into Latin words (dictionary forms or inflected ones). Fill every word in the grid; extra words count as bonus.</p>${grid}<div class="crword la" id="crword">${CR.cur.map(k => CR.letters[k]).join('') || '&nbsp;'}</div>${ring}<p class="crbtns"><button class="btn" id="crshuf">Shuffle</button><button class="btn" id="crdel">Delete</button><button class="btn" id="crhint">Hint</button><button class="btn primary" id="crenter">Enter</button></p><p class="small muted">${p.grid.filter(w => CR.found.has(w.w)).length} of ${p.grid.length} in the grid${CR.bonus.size ? ` · ${CR.bonus.size} bonus` : ''} · ${Object.keys(g.solved || {}).length} rings solved</p>${done ? `<div class="card done gend"><div class="big">Corōna complēta!</div><p><button class="btn primary" id="crgo">Next ring</button></p></div>` : ''}<div class="crfound">${foundList}</div>`;
+    view.innerHTML = `${crumb('Corōna')}<div class="game-top"><h1 style="margin:0">Corōna <span class="muted small">${CR.i + 1}/${CORONA_ALL.length} · ${p.grid.filter(w => CR.found.has(w.w)).length} of ${p.grid.length}${CR.bonus.size ? ` +${CR.bonus.size}` : ''}</span></h1><div class="seg"><button id="crprev" ${CR.i === 0 ? 'disabled' : ''}>‹</button><button id="crnext" ${CR.i >= CORONA_ALL.length - 1 ? 'disabled' : ''}>›</button></div></div><div class="grow">${grid}</div><div class="crword la" id="crword">${CR.cur.map(k => CR.letters[k]).join('') || '&nbsp;'}</div>${ring}<p class="crbtns"><button class="btn" id="crshuf">Shuffle</button><button class="btn" id="crdel">Delete</button><button class="btn" id="crhint">Hint</button><button class="btn primary" id="crenter">Enter</button></p><div class="crfound hscroll">${done ? `<span class="chip"><b>Corōna complēta!</b> <a href="#/play/corona/${CR.i + 2}">Next ring ›</a></span>` : ''}${foundList}</div>`;
+    fitCells(view.querySelector('.cwgrid'), p.h, p.w, 3, 36, '--cwc');
     $('#crprev').onclick = () => coronaStart(CR.i - 1); $('#crnext').onclick = () => coronaStart(CR.i + 1);
-    const go = $('#crgo'); if (go) go.onclick = () => coronaStart(CR.i + 1);
     $('#crshuf').onclick = () => { CR.letters = shuffle(CR.letters.slice()); CR.cur = []; coronaDraw(); };
     $('#crdel').onclick = () => { CR.cur.pop(); coronaWord(); };
     $('#crenter').onclick = coronaSubmit;
@@ -881,7 +882,7 @@
   function anagramNext() {
     const w = AN.list[AN.i]; if (!w) { const best = bump('anagram', s => { s.played = (s.played || 0) + 1; s.best = Math.max(s.best || 0, AN.score); }).best; view.innerHTML = `${crumb('Anagramma')}<h1>Anagramma</h1><div class="card done gend"><div class="big">${AN.score} / 10</div><p class="small muted">best ${best} of 10</p><p><button class="btn primary" id="anagain">Another round</button></p><p class="similar">${AN.list.map(x => `<a href="#/w/${encodeURIComponent(x.nk)}"><span class="la">${esc(x.hw)}</span><span class="gl">${esc(x.gl)}</span></a>`).join('')}</p></div>`; $('#anagain').onclick = anagramStart; return; }
     AN.cur = []; let tiles = w.nk.split(''); let tries = 0; do { tiles = shuffle(tiles.slice()); } while (tiles.join('') === w.nk && tries++ < 10); AN.tiles = tiles;
-    view.innerHTML = `${crumb('Anagramma')}<div class="game-top"><h1 style="margin:0">Anagramma</h1><span class="muted small">${AN.i + 1} / 10 · ${AN.score} right</span></div><p class="small muted">Tap the letters in order to spell the Latin word that means:</p><p class="anhint">${esc(w.gl)} <span class="muted small">(${esc(CORE.pos[w.pos] || w.pos.toLowerCase())})</span></p><div class="anslots" id="anslots">${w.nk.split('').map(() => `<span></span>`).join('')}</div><div class="antiles" id="antiles">${tiles.map((ch, k) => `<button class="la" data-k="${k}">${ch}</button>`).join('')}</div><p class="crbtns"><button class="btn" id="anclear">Clear</button><button class="btn" id="anskip">Skip</button></p>`;
+    view.innerHTML = `${crumb('Anagramma')}<div class="game-top"><h1 style="margin:0">Anagramma</h1><span class="muted small">${AN.i + 1} / 10 · ${AN.score} right</span></div><p class="small muted">Tap the letters in order to spell the Latin word that means:</p><p class="anhint">${esc(w.gl)} <span class="muted small">(${esc(CORE.pos[w.pos] || w.pos.toLowerCase())})</span></p><div class="grow"><div class="anslots" id="anslots">${w.nk.split('').map(() => `<span></span>`).join('')}</div><div class="antiles" id="antiles">${tiles.map((ch, k) => `<button class="la" data-k="${k}">${ch}</button>`).join('')}</div></div><p class="crbtns"><button class="btn" id="anclear">Clear</button><button class="btn" id="anskip">Skip</button></p>`;
     const draw = () => { const slots = view.querySelectorAll('#anslots span'); slots.forEach((s, i) => { s.textContent = AN.cur[i] != null ? AN.tiles[AN.cur[i]] : ''; }); view.querySelectorAll('#antiles button').forEach(b => b.classList.toggle('used', AN.cur.includes(+b.dataset.k))); };
     $('#antiles').onclick = ev => { const b = ev.target.closest('button'); if (!b || AN.cur.includes(+b.dataset.k)) return; AN.cur.push(+b.dataset.k); draw(); if (AN.cur.length === w.nk.length) { const got = AN.cur.map(k => AN.tiles[k]).join(''); const sl = $('#anslots'); if (got === w.nk) { sl.classList.add('ok'); AN.score++; if (navigator.vibrate) navigator.vibrate(10); AN.i++; setTimeout(anagramNext, 600); } else { sl.classList.add('shake'); setTimeout(() => { sl.classList.remove('shake'); AN.cur = []; draw(); }, 400); } } };
     $('#anclear').onclick = () => { AN.cur = []; draw(); };
@@ -899,13 +900,20 @@
     const w = HG.w; const letters = w.nk.split(''); const lost = HG.wrong >= 8; const won = letters.every(ch => HG.guessed.has(ch)); const over = lost || won;
     const states = {}; for (const k of HG.guessed) states[k] = letters.includes(k) ? 'g' : 'x';
     const g = gstat().hang || {};
-    view.innerHTML = `${crumb('Pendulus')}<div class="game-top"><h1 style="margin:0">Pendulus</h1><span class="muted small">${8 - HG.wrong} left</span></div><div class="hang"><svg viewBox="0 0 110 120" class="gallows">${HANG_PARTS.slice(0, HG.wrong).join('')}</svg><div><p class="small muted">A ${esc(CORE.pos[w.pos] || w.pos.toLowerCase())} meaning</p><p class="anhint">${esc(w.gl)}</p><div class="hword la">${letters.map(ch => `<span class="${HG.guessed.has(ch) ? 'on' : lost ? 'miss' : ''}">${HG.guessed.has(ch) || lost ? ch : ''}</span>`).join('')}</div></div></div>${over ? `<div class="card done gend"><div class="big la">${esc(w.hw)}</div><p class="small muted">${won ? `Saved, with ${HG.wrong} wrong letter${HG.wrong === 1 ? '' : 's'}.` : 'Too late.'}</p><p><a class="btn" href="#/w/${encodeURIComponent(w.nk)}">Open entry</a> <button class="btn primary" id="hgagain">Another word</button></p></div><div class="stat"><div><b>${g.played || 0}</b><span>played</span></div><div><b>${g.won || 0}</b><span>won</span></div><div><b>${g.streak || 0}</b><span>streak</span></div></div>` : keyboardHTML([['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'], ['k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's'], ['t', 'u', 'x', 'y', 'z']], states)}`;
+    view.innerHTML = `${crumb('Pendulus')}<div class="game-top"><h1 style="margin:0">Pendulus</h1><span class="muted small">${8 - HG.wrong} left</span></div><div class="grow"><div class="hang"><svg viewBox="0 0 110 120" class="gallows">${HANG_PARTS.slice(0, HG.wrong).join('')}</svg><div><p class="small muted">A ${esc(CORE.pos[w.pos] || w.pos.toLowerCase())} meaning</p><p class="anhint">${esc(w.gl)}</p><div class="hword la">${letters.map(ch => `<span class="${HG.guessed.has(ch) ? 'on' : lost ? 'miss' : ''}">${HG.guessed.has(ch) || lost ? ch : ''}</span>`).join('')}</div></div></div></div>${over ? `<div class="card done gend"><div class="big la">${esc(w.hw)}</div><p class="small muted">${won ? `Saved, with ${HG.wrong} wrong letter${HG.wrong === 1 ? '' : 's'}.` : 'Too late.'}</p><p><a class="btn" href="#/w/${encodeURIComponent(w.nk)}">Open entry</a> <button class="btn primary" id="hgagain">Another word</button></p></div><div class="stat"><div><b>${g.played || 0}</b><span>played</span></div><div><b>${g.won || 0}</b><span>won</span></div><div><b>${g.streak || 0}</b><span>streak</span></div></div>` : keyboardHTML([['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'], ['k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's'], ['t', 'u', 'x', 'y', 'z']], states)}`;
     const kb = view.querySelector('.kb'); if (kb) kb.onclick = ev => { const b = ev.target.closest('button'); if (!b || HG.guessed.has(b.dataset.k)) return; const k = b.dataset.k; HG.guessed.add(k); if (!letters.includes(k)) HG.wrong++; const nowWon = letters.every(ch => HG.guessed.has(ch)), nowLost = HG.wrong >= 8; if (nowWon || nowLost) bump('hang', s => { s.played = (s.played || 0) + 1; if (nowWon) { s.won = (s.won || 0) + 1; s.streak = (s.streak || 0) + 1; } else s.streak = 0; }); if (nowWon && navigator.vibrate) navigator.vibrate([10, 40, 10]); hangDraw(); };
     const ag = $('#hgagain'); if (ag) ag.onclick = hangStart;
+  }
+  let refit = null; window.addEventListener('resize', () => { if (refit) refit(); });
+  function fitCells(el, rows, cols, gap, max, name) {
+    if (!el) return;
+    const run = () => { if (!el.isConnected) return; const box = el.closest('.grow') || el.parentElement; const h = box.clientHeight, w = box.clientWidth; const size = Math.max(14, Math.min(max, Math.floor((h - gap * (rows - 1)) / rows), Math.floor((w - gap * (cols - 1)) / cols))); document.documentElement.style.setProperty(name, size + 'px'); };
+    run(); refit = run; requestAnimationFrame(run); setTimeout(run, 120); if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);
   }
   function renderPlay(arg) {
     const [game, sub] = (arg || '').split('/');
     if (game === 'cloze') return renderCloze(sub);
+    if (game) view.classList.add('fit');
     if (game === 'match' || game === 'forms' || game === 'saved') return renderMatch(game);
     if (game === 'verbum') return verbumStart(sub !== 'r');
     if (game === 'nexus') return nexusStart(sub !== 'r');
@@ -1038,8 +1046,17 @@
 
   // ---------------- routing & events ----------------
   function setTab(name) { document.querySelectorAll('#tabs a').forEach(a => a.classList.toggle('active', a.dataset.tab === name)); }
+  // ---- tab bar: hidden on content pages and when scrolling down; swipe up from the bottom or tap the handle to bring it back ----
+  const tabsEl = $('#tabs'); let tabsOn = true, lastY = 0;
+  function setTabs(on) { tabsOn = on; tabsEl.classList.toggle('off', !on); document.body.classList.toggle('tabs-off', !on); document.documentElement.style.setProperty('--barspace', on ? '96px' : '22px'); }
+  view.addEventListener('scroll', () => { const y = view.scrollTop; const dy = y - lastY; if (view.classList.contains('fit')) return; if (dy > 10 && tabsOn && y > 40) setTabs(false); else if (dy < -10 && !tabsOn) setTabs(true); lastY = y; }, { passive: true });
+  $('#tabhandle').addEventListener('click', () => setTabs(true));
+  let swipeY = null; document.addEventListener('touchstart', ev => { const t = ev.touches[0]; swipeY = t.clientY > window.innerHeight - 70 ? t.clientY : null; }, { passive: true });
+  document.addEventListener('touchmove', ev => { if (swipeY === null) return; if (swipeY - ev.touches[0].clientY > 24) { setTabs(true); swipeY = null; } }, { passive: true });
+  const BAR_SHOW = h => h === '#/' || h === '' || h === '#/g' || h === '#/r' || h === '#/play' || h === '#/settings' || h === '#/saved' || /^#\/(gg|s)\//.test(h);
   async function route() {
     const h = location.hash || '#/';
+    view.classList.remove('fit'); lastY = 0; setTabs(BAR_SHOW(h));
     const m = h.match(/^#\/(play|gg|w|g|p|s|r)?\/?([^?]*)(\?(.*))?$/);
     if (m && m[1] === 'play' && /^cloze/.test(m[2] || '')) { /* keep cloze/<id> in arg */ }
     const kind = m && m[1], arg = m ? decodeURIComponent(m[2] || '') : '', qs = m && m[4] ? new URLSearchParams(m[4]) : null;
