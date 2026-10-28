@@ -43,6 +43,26 @@
   const groupFile = L => (Data.meta && Data.meta.groups && Data.meta.groups[L]) || null;
   async function idx(L) { const g = groupFile(L); if (g) { const o = await getJSON(`data/idx/${g}.json`).catch(() => ({})); return o[L] || []; } return getJSON(`data/idx/${L}.json`).catch(() => []); }
   async function wwChunk(L) { const g = groupFile(L); let arr; if (g) { const o = await getJSON(`data/ww/${g}.json`).catch(() => ({})); arr = o[L] || []; } else arr = await getJSON(`data/ww/${L}.json`).catch(() => []); if (!arr._map) { Object.defineProperty(arr, '_map', { value: new Map(arr.map(e => [e.i, e])) }); } return arr; }
+  async function enIndex(L) { const g = groupFile(L); if (g) { const o = await getJSON(`data/en/${g}.json`).catch(() => ({})); return o[L] || {}; } return getJSON(`data/en/${L}.json`).catch(() => ({})); }
+  async function englishResults(q) {
+    let w = q.toLowerCase().trim().replace(/^(to|a|an|the|be)\s+/, '').replace(/[^a-z' -]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (w.length < 2) return { word: w, list: [] };
+    const L = /[a-z]/.test(w[0]) ? w[0] : '_';
+    const en = await enIndex(L);
+    const hits = (en[w] || []).map(([nk, sc]) => ({ nk, s: sc, key: w }));
+    if (hits.length < 15) {
+      const alt = []; if (w.endsWith('s')) alt.push(w.slice(0, -1)); if (w.endsWith('es')) alt.push(w.slice(0, -2)); if (w.endsWith('ies')) alt.push(w.slice(0, -3) + 'y'); if (w.endsWith('ed')) alt.push(w.slice(0, -2), w.slice(0, -1)); if (w.endsWith('ing')) alt.push(w.slice(0, -3), w.slice(0, -3) + 'e');
+      for (const a of alt) for (const [nk, sc] of (en[a] || []).slice(0, 40)) hits.push({ nk, s: sc + 2, key: a });
+      const keys = Object.keys(en).filter(k => k !== w && k.length > w.length && (k.startsWith(w) || k.startsWith(w + ' '))).sort((a, b) => a.length - b.length).slice(0, 15);
+      for (const k of keys) for (const [nk, sc] of en[k].slice(0, 15)) hits.push({ nk, s: sc + 30 + (k.length - w.length), key: k });
+    }
+    const best = new Map(); for (const h of hits) { const p = best.get(h.nk); if (!p || h.s < p.s) best.set(h.nk, h); }
+    const list = [...best.values()].sort((a, b) => a.s - b.s).slice(0, 60);
+    const byL = {}; for (const h of list) (byL[letterOf(h.nk)] = byL[letterOf(h.nk)] || []).push(h);
+    const recs = new Map();
+    await Promise.all(Object.keys(byL).map(async L2 => { const arr = await idx(L2); const m = new Map(arr.map(r => [r[0], r])); for (const h of byL[L2]) { const r = m.get(h.nk); if (r) recs.set(h.nk, r); } }));
+    return { word: w, list: list.map(h => ({ ...h, r: recs.get(h.nk) })).filter(h => h.r) };
+  }
   async function wwIndex(L) { if (Data.wwIdx[L]) return Data.wwIdx[L]; const arr = await wwChunk(L); return (Data.wwIdx[L] = Morph.buildIndex(arr)); }
   function lsChunkFor(nk) { const b = Data.lsBounds; let lo = 0, hi = b.length - 1; while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (b[mid] <= nk) lo = mid; else hi = mid - 1; } return lo; }
   async function lsEntries(nk) {
@@ -327,28 +347,26 @@
       html += `<div class="section-title">Forms of other words</div><div class="results analysis">` + anal.slice(0, 25).map(g => { const pid = packFor(g.e); return `<a class="row" href="#/w/${encodeURIComponent(norm(g.e.hw))}?f=${encodeURIComponent(nq)}"><span class="form la">${esc(S.settings.macrons ? macFormGuess(g.e, nq) : q)}</span>${g.enc ? `<span class="chip">+ ${esc(g.enc)}</span>` : ''} <span class="pos">${esc(g.descs.slice(0, 3).join('; '))}${g.descs.length > 3 ? ' …' : ''}</span><span class="gl"><b class="la">${esc(macHw(g.e))}</b> — ${esc((g.e.m || '').replace(/^\|+/, '').split(';').slice(0, 2).join(';'))}</span></a>`; }).join('') + `</div>`;
     }
     if (pre.length) html += `<div class="section-title">Headwords starting with “${esc(q)}”</div><div class="results">${pre.map(row).join('')}</div>`;
-    if (!exact.length && !anal.length && !pre.length) html += `<div class="empty">Nothing found for <b>${esc(q)}</b>.</div>`;
-    html += `<div class="section-title">English</div><div class="results" id="engres"><button class="btn" id="engbtn">Search English meanings for “${esc(q)}”</button></div>`;
+    const noLatin = !exact.length && !anal.length && !pre.length;
+    const engBlock = `<div class="section-title">English → Latin</div><div class="results" id="engres"><p class="muted small">Searching English meanings…</p></div>`;
+    html = noLatin ? engBlock + html : html + engBlock;
     view.innerHTML = html;
-    $('#engbtn').onclick = () => englishSearch(q);
+    englishResults(q).then(({ word, list }) => {
+      if (lastQuery !== q) return; const box = $('#engres'); if (!box) return;
+      if (!list.length) { box.innerHTML = noLatin ? `<div class="empty">Nothing found for <b>${esc(q)}</b> in Latin or English.</div>` : `<p class="muted small">No English meanings match “${esc(q)}”.</p>`; return; }
+      const keys = [...new Set(list.map(h => h.key))].sort((a, b) => b.length - a.length);
+      const re = new RegExp('(' + keys.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'ig');
+      box.innerHTML = list.map(h => { const r = h.r; return `<a class="row" href="#/w/${encodeURIComponent(r[0])}"><span class="hw">${esc(S.settings.macrons ? r[1] : strip(r[1]))}</span> <span class="pos">${esc(r[2].split(',').map(p => CORE.pos[p] || p.toLowerCase()).join(', '))}</span><span class="gl">${esc(r[3]).replace(re, '<mark>$1</mark>')}</span></a>`; }).join('');
+    }).catch(() => { const box = $('#engres'); if (box) box.innerHTML = ''; });
   }
   function macFormGuess(e, nq) { const forms = Morph.generate(e); const x = forms.find(f => norm(f.f) === nq && f.common) || forms.find(f => norm(f.f) === nq); return x ? Macrons.mac(e, x) : nq; }
-  async function englishSearch(q) {
-    const box = $('#engres'); if (!box) return; box.innerHTML = `<p class="muted">Loading meanings…</p>`;
-    const letters = 'abcdefghiklmnopqrstuwxyz'.split('');
-    const all = (await Promise.all(letters.map(L => idx(L)))).flat();
-    const w = q.toLowerCase().trim(); const re = new RegExp('(^|[^a-z])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z]|$)', 'i');
-    const hits = all.filter(r => re.test(r[3])).sort((a, b) => a[3].toLowerCase().indexOf(w) - b[3].toLowerCase().indexOf(w)).slice(0, 80);
-    box.innerHTML = hits.length ? hits.map(r => `<a class="row" href="#/w/${encodeURIComponent(r[0])}"><span class="hw">${esc(S.settings.macrons ? r[1] : strip(r[1]))}</span> <span class="pos">${esc(r[2].split(',').map(p => CORE.pos[p] || p.toLowerCase()).join(', '))}</span><span class="gl">${r[3].replace(re, (m) => `<mark>${esc(m)}</mark>`)}</span></a>`).join('') : `<p class="muted">No English matches for “${esc(q)}”.</p>`;
-  }
-
   // ---------------- home / saved / settings ----------------
   const WOTD = ['amicus', 'virtus', 'tempus', 'fortuna', 'bellum', 'pax', 'gloria', 'sapientia', 'libertas', 'veritas', 'fides', 'spes', 'carpo', 'memini', 'festino', 'fero', 'audeo', 'amo', 'rex', 'lux', 'nox', 'mare', 'caelum', 'terra', 'ignis', 'aqua', 'ventus', 'flumen', 'mons', 'silva', 'urbs', 'domus', 'via', 'iter', 'exercitus', 'imperium', 'senatus', 'populus', 'civis', 'hostis', 'dux', 'miles', 'poeta', 'liber', 'verbum', 'vox', 'oculus', 'manus', 'cor', 'animus', 'mens', 'corpus', 'vita', 'mors', 'deus', 'dea', 'fatum', 'natura', 'ars', 'otium', 'labor', 'ludus', 'fenestra', 'flos', 'rosa', 'arbor', 'hortus', 'vinum', 'panis', 'mel', 'cena', 'villa', 'ianua', 'puella', 'puer', 'mater', 'pater', 'frater', 'soror', 'filius', 'filia', 'uxor', 'coniunx', 'canis', 'equus', 'avis', 'leo', 'lupus', 'ovis', 'bos', 'piscis', 'serpens', 'aper', 'cervus', 'aquila', 'columba', 'facio', 'dico', 'video', 'venio', 'duco', 'capio', 'mitto', 'pono', 'scribo', 'lego', 'habeo', 'teneo', 'moneo', 'sequor', 'loquor', 'patior', 'morior', 'nascor', 'utor', 'sum', 'possum', 'eo', 'volo', 'nolo', 'malo', 'fio', 'do', 'sto', 'maneo', 'cado', 'curro', 'vinco', 'rego', 'ago', 'peto', 'quaero', 'laudo', 'voco', 'porto', 'specto', 'ambulo', 'intellego', 'cogito', 'disco', 'doceo', 'scio', 'nescio', 'credo', 'timeo', 'gaudeo', 'doleo', 'rideo', 'fleo', 'dormio', 'sentio', 'aperio', 'invenio', 'finis', 'initium', 'causa', 'res', 'dies', 'spes', 'fides', 'acies', 'species', 'genu', 'cornu', 'fructus', 'exercitus', 'lacus', 'portus', 'senex', 'iuvenis', 'homo', 'mulier', 'femina', 'vir', 'nomen', 'carmen', 'flumen', 'lumen', 'opus', 'onus', 'tempus', 'pectus', 'litus', 'vulnus', 'genus', 'bonus', 'malus', 'magnus', 'parvus', 'multus', 'omnis', 'fortis', 'brevis', 'longus', 'altus', 'novus', 'vetus', 'pulcher', 'acer', 'celer', 'felix', 'audax', 'sapiens', 'ingens', 'dulcis', 'gravis', 'levis', 'facilis', 'difficilis', 'similis', 'liber', 'miser', 'niger', 'ruber', 'sacer', 'tener', 'ego', 'tu', 'nos', 'vos', 'hic', 'ille', 'iste', 'is', 'idem', 'ipse', 'qui', 'quis', 'aliquis', 'quidam', 'unus', 'duo', 'tres', 'mille', 'bene', 'male', 'saepe', 'semper', 'numquam', 'nunc', 'tunc', 'cras', 'heri', 'hodie', 'ubi', 'unde', 'quo', 'cur', 'ita', 'sic', 'non', 'ne', 'et', 'sed', 'atque', 'aut', 'nec', 'cum', 'ad', 'ab', 'ex', 'in', 'de', 'per', 'pro', 'sine', 'sub', 'super', 'inter', 'ante', 'post', 'propter', 'trans', 'apud', 'ob', 'circum', 'contra', 'erga', 'ultra', 'citra', 'prae', 'coram', 'palam', 'tenus'];
   function renderHome() {
     const day = Math.floor(Date.now() / 86400000); const w = WOTD[day % WOTD.length];
     const hist = S.history.slice(0, 12), favs = S.favs.slice(0, 8);
     let html = `<div class="card"><div class="section-title" style="margin-top:0">Word of the day</div><a href="#/w/${w}" class="wotd">${esc(w)}</a> <span class="muted small">— tap to look it up</span></div>`;
-    html += `<div class="card"><div class="section-title" style="margin-top:0">How to use</div><p class="small">Type any Latin word <i>in any form</i> (e.g. <span class="kbd">amīcōrum</span>, <span class="kbd">tulisti</span>, <span class="kbd">puellaeque</span>) or an English word. Tap the <span class="ibtn" style="pointer-events:none">i</span> next to any case or tense to see what it means, with example sentences of the same word type as the one you looked up.</p><p class="small">Macrons, j/v and i/u are optional when searching.</p></div>`;
+    html += `<div class="card"><div class="section-title" style="margin-top:0">How to use</div><p class="small">Type any Latin word <i>in any form</i> (e.g. <span class="kbd">amīcōrum</span>, <span class="kbd">tulisti</span>, <span class="kbd">puellaeque</span>), or an English word (<span class="kbd">friend</span>, <span class="kbd">to fight</span>) to find the Latin words that mean it. Tap the <span class="ibtn" style="pointer-events:none">i</span> next to any case or tense to see what it means, with example sentences of the same word type as the one you looked up.</p><p class="small">Macrons, j/v and i/u are optional when searching.</p></div>`;
     if (hist.length) html += `<div class="section-title">Recent</div><div class="pill-row">${hist.map(h => `<a class="chip la" href="#/w/${encodeURIComponent(h.nk)}">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</a>`).join('')}</div>`;
     if (favs.length) html += `<div class="section-title">Saved</div><div class="pill-row">${favs.map(h => `<a class="chip la" href="#/w/${encodeURIComponent(h.nk)}">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</a>`).join('')}</div>`;
     html += `<div class="section-title">Grammar quick links</div><div class="pill-row">${['N-1-F', 'N-2-M', 'N-2-N', 'N-3-M', 'N-3-N', 'N-4-M', 'N-5-F', 'ADJ-1-2', 'ADJ-3-2', 'V-1', 'V-2', 'V-3', 'V-3IO', 'V-4', 'V-SUM', 'PRON-HIC', 'PRON-QUI'].filter(id => PACKS_ALL[id]).map(id => `<a class="chip" href="#/p/${id}">${esc(PACKS_ALL[id].title)}</a>`).join('')}</div>`;
@@ -386,7 +404,7 @@
   async function downloadAll() {
     await Data.ready;
     const files = ['data/inflects.json', 'data/ls_index.json', 'data/meta.json'];
-    const seen = new Set(); for (const L of 'abcdefghiklmnopqrstuwxyz_') { const g = groupFile(L) || L; if (seen.has(g)) continue; seen.add(g); files.push(`data/idx/${g}.json`, `data/ww/${g}.json`); }
+    const seen = new Set(); for (const L of 'abcdefghiklmnopqrstuwxyz_') { const g = groupFile(L) || L; if (seen.has(g)) continue; seen.add(g); files.push(`data/idx/${g}.json`, `data/ww/${g}.json`, `data/en/${g}.json`); }
     for (let i = 0; i < Data.lsBounds.length; i++) files.push(`data/ls/${String(i).padStart(3, '0')}.json`);
     let n = 0; const btn = $('#dlall');
     for (const f of files) { try { await getJSON(f); } catch (e) { } n++; if (btn) btn.textContent = `${Math.round(100 * n / files.length)}%`; }
