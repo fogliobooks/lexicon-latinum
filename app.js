@@ -1,7 +1,7 @@
 /* Lexicon Latinum — app logic */
 (function () {
   'use strict';
-  const APP_BUILD = '2026-10-28.0253';
+  const APP_BUILD = '2026-10-28.0255';
   const $ = s => document.querySelector(s);
   const view = $('#view');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -316,7 +316,7 @@
   function lsHTML(ls) {
     const n = ls.n ? `<sup class="muted">${esc(ls.n)}</sup>` : '';
     const typ = ls.t && ls.t !== 'main' ? `<span class="chip">${esc({ greek: 'Greek word', hapax: 'attested once', gloss: 'glossary word', spur: 'spurious', foreign: 'foreign word' }[ls.t] || ls.t)}</span>` : '';
-    return `<details class="lsd" open><summary>Lewis &amp; Short${n} ${typ}</summary><div class="ls${S.settings.cit ? '' : ' nocit'}${S.settings.abridge ? ' abridged' : ''}">${ls.b}</div><div class="toggle-row"><button class="btn small toggleabr">${S.settings.abridge ? 'Show full entry' : 'Abridge'}</button><button class="btn small togglecit">${S.settings.cit ? 'Hide citations' : 'Show citations'}</button></div></details>`;
+    return `<details class="lsd" open><summary>Lewis &amp; Short${n} ${typ}</summary><div class="ls${S.settings.cit ? '' : ' nocit'}${S.settings.abridge ? ' abridged' : ''}">${ls.b}</div><div class="toggle-row"><button type="button" class="btn small toggleabr">${S.settings.abridge ? 'Show full entry' : 'Abridge'}</button><button type="button" class="btn small togglecit">${S.settings.cit ? 'Hide citations' : 'Show citations'}</button></div></details>`;
   }
   async function renderWord(nk, hlForm) {
     await Data.ready;
@@ -367,7 +367,7 @@
       ls.querySelectorAll('.sense').forEach(se => { if (se.textContent.length > 260) se.classList.add('long'); });
       ls.querySelectorAll('.morebtn').forEach(b => b.remove());
       if (!ls.classList.contains('abridged')) return;
-      ls.querySelectorAll('.sense.long').forEach(se => { if (se.scrollHeight > se.clientHeight + 3) { const b = document.createElement('button'); b.className = 'morebtn'; b.textContent = 'more…'; b.onclick = () => { se.classList.toggle('open'); b.textContent = se.classList.contains('open') ? 'less' : 'more…'; }; se.after(b); } });
+      ls.querySelectorAll('.sense.long').forEach(se => { if (se.scrollHeight > se.clientHeight + 3) { const b = document.createElement('button'); b.className = 'morebtn'; b.type = 'button'; b.textContent = 'more…'; const tog = () => { se.classList.toggle('open'); b.textContent = se.classList.contains('open') ? 'less' : 'more…'; }; b.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); tog(); }); se.addEventListener('click', ev => { if (!se.classList.contains('open') && !ev.target.closest('a')) tog(); }); se.after(b); } });
     });
   }
 
@@ -566,7 +566,9 @@
     } catch (e) { if (popEl) popEl.innerHTML = `<div class="pgl muted">Could not look that up.</div>`; }
   }
   function placePop(wEl) {
-    const r = wEl.getBoundingClientRect(); const pw = popEl.offsetWidth || 300; const ph = popEl.offsetHeight || 80;
+    let r = wEl.getBoundingClientRect(); const pw = popEl.offsetWidth || 300; const ph = popEl.offsetHeight || 80;
+    const barTop = window.innerHeight - 96 - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sab')) || 0);
+    if (r.bottom > barTop - 8) { window.scrollBy({ top: r.bottom - (barTop - 8), left: 0, behavior: 'instant' }); r = wEl.getBoundingClientRect(); }
     const vw = document.documentElement.clientWidth; const headerH = ($('#top') ? $('#top').getBoundingClientRect().bottom : 0);
     let left = r.left + r.width / 2 - pw / 2; left = Math.max(12, Math.min(vw - pw - 12, left));
     const above = r.top - headerH > ph + 14;
