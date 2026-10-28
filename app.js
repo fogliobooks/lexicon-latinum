@@ -1,7 +1,7 @@
 /* Lexicon Latinum — app logic */
 (function () {
   'use strict';
-  const APP_BUILD = '2026-10-28.0210';
+  const APP_BUILD = '2026-10-28.0229';
   const $ = s => document.querySelector(s);
   const view = $('#view');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -422,6 +422,7 @@
     verb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h11"/><path d="M10 7l5 5-5 5"/><path d="M17 5v14"/><path d="M21 5v14"/></svg>',
     syntax: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h13"/><circle cx="19" cy="12" r="2"/></svg>',
     ref: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M14 4v5h5M8 13h8M8 17h6"/></svg>',
+    book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-2-1.5-5-2-8-2v14c3 0 6 .5 8 2 2-1.5 5-2 8-2V4c-3 0-6 .5-8 2z"/><path d="M12 6v14"/></svg>',
     dice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2" fill="currentColor"/><circle cx="15" cy="15" r="1.2" fill="currentColor"/><circle cx="15" cy="9" r="1.2" fill="currentColor"/><circle cx="9" cy="15" r="1.2" fill="currentColor"/></svg>',
   };
   const GROUP_INFO = { 'Nouns': ['noun', 'Five declensions, every case', 'Nouns'], 'Adjectives & Adverbs': ['adj', 'Agreement and the three degrees', 'Adjectives'], 'Pronouns': ['pron', 'ego, hic, ille, is, quī and friends', 'Pronouns'], 'Verbs': ['verb', 'Conjugations, tenses, moods, deponents, irregulars', 'Verbs'], 'Syntax': ['syntax', 'Ablative absolute, indirect statement, cum clauses, conditions…', 'Syntax'], 'Reference': ['ref', 'Reading an entry, abbreviations', 'Reference'] };
@@ -433,6 +434,8 @@
     if (hist.length) html += `<div class="section-title">Recent</div><div class="hscroll">${hist.map(mini).join('')}</div>`;
     if (favs.length) html += `<div class="section-title">Saved</div><div class="hscroll">${favs.map(mini).join('')}</div>`;
     html += `<div class="section-title">Grammar</div><div class="tiles">${Object.entries(GROUP_INFO).map(([g, [ic, d, short]]) => `<a class="tile" href="#/gg/${encodeURIComponent(g)}">${ICONS[ic]}<b>${esc(short)}</b><span>${esc(d)}</span></a>`).join('')}</div>`;
+    const rd = load('read', { done: [], last: null }); const lastP = rd.last && READ.find(x => x.id === rd.last);
+    html += `<a class="tile wide" href="#/r${lastP ? '/' + lastP.id : ''}">${ICONS.book}<div><b>${lastP ? 'Continue reading' : 'Reader'}</b><span>${lastP ? esc(lastP.title + ' · ' + lastP.author) : 'Graded passages from the Vulgate to Virgil, every word tappable'}${rd.done.length ? ` · ${rd.done.length}/${READ.length} read` : ''}</span></div></a>`;
     const st = load('stats', { rounds: 0, best: 0 });
     html += `<a class="tile wide" href="#/play">${ICONS.dice}<div><b>Practice</b><span>Match Latin and English, or forms and their names${st.rounds ? ` · ${st.rounds} round${st.rounds === 1 ? '' : 's'} played` : ''}</span></div></a>`;
     html += `<div class="card tip"><div class="k">Tip</div>${esc(tip)}</div>`;
@@ -500,6 +503,57 @@
     requestAnimationFrame(() => { const bg = getComputedStyle(r).getPropertyValue('--bg').trim(); document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', bg)); });
   }
 
+  // ---------------- reader ----------------
+  const READ = typeof READER !== 'undefined' ? READER : [];
+  const LEVELS = { 1: ['First steps', 'Short sentences, common words'], 2: ['Easy', 'Fables, epigrams, simple narrative'], 3: ['Intermediate', 'Caesar, Seneca, letters'], 4: ['Advanced', 'Oratory, lyric, Ovid'], 5: ['Expert', 'Epic, Lucretius, Tacitus'] };
+  function renderReader() {
+    const rd = load('read', { done: [], last: null });
+    let html = `<h1>Reader</h1><p class="small muted">Real Latin, graded from easiest to hardest. Tap any word for its meaning and form; show the translation sentence by sentence. Texts are public domain; Plutarch wrote in Greek, so he is not here.</p><div class="progress"><i style="width:${Math.round(100 * rd.done.length / READ.length)}%"></i></div>`;
+    for (const l of [1, 2, 3, 4, 5]) {
+      const ps = READ.filter(p => p.level === l); if (!ps.length) continue;
+      html += `<div class="lvlhead"><span class="lvl l${l}">Level ${l}</span><div><h2>${esc(LEVELS[l][0])}</h2><div class="d">${esc(LEVELS[l][1])}</div></div></div>`;
+      html += ps.map(p => `<a class="card pcard ${rd.done.includes(p.id) ? 'read' : ''}" href="#/r/${p.id}"><span class="t">${esc(p.title)}</span><span class="a">${esc(p.author)} · ${esc(p.work)} · ${p.la.join(' ').split(/\s+/).length} words</span></a>`).join('');
+    }
+    view.innerHTML = html; window.scrollTo(0, 0);
+  }
+  const wordify = txt => esc(txt).replace(/([A-Za-zÀ-ÿ]+)/g, m => `<span class="w" data-w="${m}">${m}</span>`);
+  function renderPassage(id) {
+    const p = READ.find(x => x.id === id); if (!p) { view.innerHTML = `<div class="empty">Passage not found.</div>`; return; }
+    const rd = load('read', { done: [], last: null }); rd.last = id; save('read', rd);
+    const i = READ.indexOf(p); const prev = READ[i - 1], next = READ[i + 1]; const done = rd.done.includes(id);
+    let html = `<p class="small muted"><a href="#/r">Reader</a> · <span class="lvl l${p.level}">Level ${p.level}</span></p><h1>${esc(p.title)}</h1><p class="muted">${esc(p.author)}, <i>${esc(p.work)}</i></p><p class="small">${esc(p.intro)}</p>`;
+    html += `<div class="rtools"><button class="btn" id="trbtn">Show translation</button><button class="btn ${done ? 'on' : ''}" id="donebtn">${done ? 'Read ✓' : 'Mark as read'}</button><span class="small muted">Tap a word to look it up</span></div>`;
+    html += `<div class="passage ${p.verse ? 'verse' : ''}" id="passage">${p.la.map((para, k) => `<p>${wordify(para)}</p><div class="tr"><div>${esc(p.en[k] || '')}</div></div>`).join('')}</div>`;
+    if (p.notes && p.notes.length) html += `<h2>Notes</h2><dl class="notes">${p.notes.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;
+    html += `<div class="pnav">${prev ? `<a class="btn" href="#/r/${prev.id}">‹ ${esc(prev.title)}</a>` : '<span></span>'}${next ? `<a class="btn primary" href="#/r/${next.id}">${esc(next.title)} ›</a>` : ''}</div>`;
+    view.innerHTML = html; window.scrollTo(0, 0);
+    $('#trbtn').onclick = () => { const ps = $('#passage'); ps.classList.toggle('showtr'); $('#trbtn').textContent = ps.classList.contains('showtr') ? 'Hide translation' : 'Show translation'; };
+    $('#donebtn').onclick = () => { const r = load('read', { done: [], last: null }); if (r.done.includes(id)) r.done = r.done.filter(x => x !== id); else r.done.push(id); save('read', r); const on = r.done.includes(id); $('#donebtn').textContent = on ? 'Read ✓' : 'Mark as read'; $('#donebtn').classList.toggle('on', on); if (on) toast('Marked as read'); };
+    $('#passage').onclick = ev => { const w = ev.target.closest('.w'); if (!w) return; $('#passage').querySelectorAll('.w.on').forEach(x => x.classList.remove('on')); w.classList.add('on'); quickGloss(w.dataset.w); };
+  }
+  async function quickGloss(word) {
+    const body = $('#sheet .sheet-body'); body.innerHTML = `<div class="gloss-hw">${esc(word)}</div><div class="skel" style="width:50%"></div><div class="skel"></div>`; $('#sheet').hidden = false; document.body.style.overflow = 'hidden';
+    try {
+      await Data.ready; const nq = norm(word); const L = letterOf(nq);
+      const [arr, wIdx] = await Promise.all([idx(L), wwIndex(L)]);
+      const an = Morph.analyze(nq, wIdx);
+      const byEntry = new Map();
+      for (const a of an) { const k = a.entry.i; if (!byEntry.has(k)) byEntry.set(k, { e: a.entry, descs: [], enc: a.enclitic, common: a.common, rank: 'ABCDEFXIMN'.indexOf((a.entry.f || 'X')[3]) }); const g = byEntry.get(k); const d = Morph.describe(a.r); if (!g.descs.includes(d)) g.descs.push(d); if (a.common) g.common = true; }
+      const list = [...byEntry.values()].sort((a, b) => (b.common - a.common) || (a.rank - b.rank) || ((a.enc ? 1 : 0) - (b.enc ? 1 : 0)));
+      const exact = arr.find(r => r[0] === nq);
+      let html = '';
+      if (list.length) {
+        const g = list[0]; const nk = norm(g.e.hw);
+        html += `<div class="gloss-hw">${esc(macHw(g.e))}${g.enc ? ` <span class="chip">+ ${esc(g.enc)}</span>` : ''}</div><div class="gloss-form">${esc(g.descs.slice(0, 2).join('; '))}</div><p>${esc((g.e.m || '').replace(/^\|+/, ''))}</p><p class="small muted">${esc(classLabel(g.e))}</p><p><a class="btn primary" href="#/w/${encodeURIComponent(nk)}?f=${encodeURIComponent(nq)}">Full entry</a></p>`;
+        if (list.length > 1) html += `<div class="gloss-alt"><div class="section-title" style="margin-top:0">Could also be</div>${list.slice(1, 4).map(g2 => `<div><a href="#/w/${encodeURIComponent(norm(g2.e.hw))}?f=${encodeURIComponent(nq)}" class="la"><b>${esc(macHw(g2.e))}</b></a> <span class="muted small">${esc(g2.descs[0])} — ${esc((g2.e.m || '').replace(/^\|+/, '').split(';')[0])}</span></div>`).join('')}</div>`;
+      } else if (exact) {
+        html += `<div class="gloss-hw">${esc(exact[1])}</div><p>${esc(exact[3])}</p><p><a class="btn primary" href="#/w/${encodeURIComponent(exact[0])}">Full entry</a></p>`;
+      } else {
+        html += `<div class="gloss-hw">${esc(word)}</div><p class="muted">Not in the dictionary as a form. It may be a proper name or a spelling variant.</p><p><a class="btn" href="#/s/${encodeURIComponent(nq)}">Search</a></p>`;
+      }
+      body.innerHTML = html;
+    } catch (e) { body.innerHTML = `<p class="muted">Could not look that up.</p>`; }
+  }
   // ---------------- practice: matching game ----------------
   const G = { mode: 'words', source: 'common', pairs: [], left: null, right: null, matched: 0, start: 0, timer: null, wrong: 0 };
   const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -682,14 +736,16 @@
   function setTab(name) { document.querySelectorAll('#tabs a').forEach(a => a.classList.toggle('active', a.dataset.tab === name)); }
   async function route() {
     const h = location.hash || '#/';
-    const m = h.match(/^#\/(play|gg|w|g|p|s)?\/?([^?]*)(\?(.*))?$/);
+    const m = h.match(/^#\/(play|gg|w|g|p|s|r)?\/?([^?]*)(\?(.*))?$/);
     const kind = m && m[1], arg = m ? decodeURIComponent(m[2] || '') : '', qs = m && m[4] ? new URLSearchParams(m[4]) : null;
     closeSheet();
+    view.style.animation = 'none'; void view.offsetWidth; view.style.animation = '';
     try {
       if (h === '#/' || h === '') { setTab('home'); $('#q').value = ''; $('#clearq').hidden = true; renderHome(); }
       else if (h === '#/saved') { setTab('saved'); renderSaved(); }
       else if (h === '#/settings') { setTab(''); renderSettings(); }
       else if (h === '#/play' || kind === 'play') { setTab('play'); renderPlay(arg); }
+      else if (h === '#/r' || kind === 'r') { setTab('read'); arg ? renderPassage(arg) : renderReader(); }
       else if (h === '#/g') { setTab('grammar'); renderGrammarIndex(); window.scrollTo(0, 0); }
       else if (kind === 'w') { setTab('home'); await renderWord(norm(arg), qs && qs.get('f') ? norm(qs.get('f')) : null); }
       else if (kind === 's') { setTab('home'); $('#q').value = arg; $('#clearq').hidden = !arg; await doSearch(arg); }

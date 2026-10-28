@@ -16,7 +16,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&family=Caveat:wght@500;700&display=swap">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -33,9 +33,10 @@
 <main id="view" aria-live="polite"></main>
 <nav id="tabs">
   <a href="#/" data-tab="home"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>Search</a>
+  <a href="#/r" data-tab="read"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-2-1.5-5-2-8-2v14c3 0 6 .5 8 2 2-1.5 5-2 8-2V4c-3 0-6 .5-8 2z"/><path d="M12 6v14"/></svg>Read</a>
   <a href="#/g" data-tab="grammar"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h11a4 4 0 0 1 0 8H4z"/><path d="M4 12h9a4 4 0 0 1 0 8H4z"/></svg>Grammar</a>
-  <a href="#/saved" data-tab="saved"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Saved</a>
   <a href="#/play" data-tab="play"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="7" height="6" rx="1.5"/><rect x="14" y="13" width="7" height="6" rx="1.5"/><path d="M10 8h4M14 8c2 0 2 2 2 3v2M10 16H7c-2 0-2-2-2-3v-2"/></svg>Practice</a>
+  <a href="#/saved" data-tab="saved"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Saved</a>
 </nav>
 <div id="sheet" class="sheet" hidden><div class="sheet-bg"></div><div class="sheet-box" role="dialog" aria-modal="true"><div class="sheet-head"><div class="sheet-handle"></div><button class="iconbtn sheet-close" aria-label="Close">×</button></div><div class="sheet-body"></div></div></div>
 <div id="toast" hidden></div>
@@ -46,6 +47,7 @@
 <script src="content/packs-verbs.js"></script>
 <script src="content/packs-pron.js"></script>
 <script src="content/grammar.js"></script>
+<script src="content/reader.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
