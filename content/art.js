@@ -1,0 +1,25 @@
+/* Public-domain artwork used in the app, with attributions. Files live in art/. */
+var ARTWORK = {
+  jerome: { file: 'jerome.jpg', artist: 'Caravaggio', title: 'Saint Jerome Writing', year: 'c. 1606' },
+  cicero: { file: 'cicero.jpg', artist: 'Cesare Maccari', title: 'Cicero Denounces Catiline', year: '1889' },
+  fortuna: { file: 'fortuna.jpg', artist: 'Carmina Burana manuscript', title: 'The Wheel of Fortune', year: 'c. 1230' },
+  venus: { file: 'venus.jpg', artist: 'Sandro Botticelli', title: 'The Birth of Venus', year: 'c. 1485' },
+  alesia: { file: 'alesia.jpg', artist: 'Lionel Royer', title: 'Vercingetorix Throws Down His Arms at the Feet of Julius Caesar', year: '1899' },
+  wolf: { file: 'wolf.jpg', artist: 'Capitoline Museums', title: 'The Capitoline Wolf', year: 'bronze' },
+  rome1: { file: 'rome1.jpg', artist: 'Thomas Cole', title: 'The Course of Empire: The Consummation of Empire', year: '1836' },
+  rome2: { file: 'rome2.jpg', artist: 'Thomas Cole', title: 'The Course of Empire: Destruction', year: '1836' },
+  rome3: { file: 'rome3.jpg', artist: 'Thomas Cole', title: 'The Course of Empire: The Arcadian or Pastoral State', year: '1836' },
+  rome4: { file: 'pantheon.jpg', artist: 'Giovanni Paolo Panini', title: 'Interior of the Pantheon, Rome', year: 'c. 1734' },
+  rome5: { file: 'lorrain.jpg', artist: 'Claude Lorrain', title: 'Capriccio with Ruins of the Roman Forum', year: 'c. 1634' },
+  pompeii: { file: 'pompeii.jpg', artist: 'John Martin', title: 'The Destruction of Pompeii and Herculaneum', year: '1822' },
+  dido: { file: 'dido.jpg', artist: 'Pierre-Narcisse Guérin', title: 'Aeneas Tells Dido of the Fall of Troy', year: '1815' },
+  augustine: { file: 'augustine.jpg', artist: 'Sandro Botticelli', title: 'Saint Augustine in His Study', year: 'c. 1480' },
+  seneca: { file: 'seneca.jpg', artist: 'Manuel Domínguez Sánchez', title: 'The Suicide of Seneca', year: '1871' },
+  adam: { file: 'adam.jpg', artist: 'Michelangelo', title: 'The Creation of Adam', year: 'c. 1512' },
+  virgil: { file: 'dido.jpg', artist: 'Pierre-Narcisse Guérin', title: 'Aeneas Tells Dido of the Fall of Troy', year: '1815' },
+  roses: { file: 'roses.jpg', artist: 'Lawrence Alma-Tadema', title: 'The Roses of Heliogabalus', year: '1888' },
+  horace: { file: 'horace.jpg', artist: 'Anton von Werner', title: 'Horace', year: '1905' },
+  martyrs: { file: 'martyrs.jpg', artist: 'Jean-Léon Gérôme', title: "The Christian Martyrs' Last Prayer", year: '1883' },
+  reader: { file: 'lorrain.jpg', artist: 'Claude Lorrain', title: 'Capriccio with Ruins of the Roman Forum', year: 'c. 1634' },
+};
+if (typeof module === 'object' && module.exports) module.exports = ARTWORK;

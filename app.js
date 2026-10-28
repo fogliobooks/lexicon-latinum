@@ -1,7 +1,7 @@
 /* Lexicon Latinum — app logic */
 (function () {
   'use strict';
-  const APP_BUILD = '2026-10-28.0229';
+  const APP_BUILD = '2026-10-28.0239';
   const $ = s => document.querySelector(s);
   const view = $('#view');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -429,10 +429,11 @@
   async function renderHome() {
     const day = Math.floor(Date.now() / 86400000); const w = WOTD[day % WOTD.length]; const tip = TIPS[day % TIPS.length];
     const hist = S.history.slice(0, 12), favs = S.favs.slice(0, 12);
-    let html = `<div class="card hero-card" id="wotd"><div class="wotd-head"><span class="section-title" style="margin:0">Word of the day</span><a class="btn small" href="#/w/${WOTD[Math.floor(Math.random() * WOTD.length)]}">${ICONS.dice.replace('<svg', '<svg width="16" height="16" style="vertical-align:-3px;margin-right:4px"')}Random</a></div><a class="wotd-hw" href="#/w/${w}">${esc(w)}</a><div class="skel" style="width:60%"></div></div>`;
+    const banners = Object.keys(ART).filter(k => k.startsWith('rome')); const bk = banners.length ? banners[day % banners.length] : null;
+    let html = (bk ? artHTML(bk) : '') + `<div class="card hero-card" id="wotd"><div class="wotd-head"><span class="section-title" style="margin:0">Word of the day</span><a class="btn small" href="#/w/${WOTD[Math.floor(Math.random() * WOTD.length)]}">${ICONS.dice.replace('<svg', '<svg width="16" height="16" style="vertical-align:-3px;margin-right:4px"')}Random</a></div><a class="wotd-hw" href="#/w/${w}">${esc(w)}</a><div class="skel" style="width:60%"></div></div>`;
     const mini = h => `<a class="mini" href="#/w/${encodeURIComponent(h.nk)}"><span class="hw">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</span><span class="gl">${esc(h.gl || '')}</span></a>`;
     if (hist.length) html += `<div class="section-title">Recent</div><div class="hscroll">${hist.map(mini).join('')}</div>`;
-    if (favs.length) html += `<div class="section-title">Saved</div><div class="hscroll">${favs.map(mini).join('')}</div>`;
+    if (favs.length) html += `<div class="section-title">My lexicon <a class="small" href="#/saved" style="font-weight:400;text-transform:none;letter-spacing:0;margin-left:8px">all ${S.favs.length} ›</a></div><div class="hscroll">${favs.map(mini).join('')}</div>`;
     html += `<div class="section-title">Grammar</div><div class="tiles">${Object.entries(GROUP_INFO).map(([g, [ic, d, short]]) => `<a class="tile" href="#/gg/${encodeURIComponent(g)}">${ICONS[ic]}<b>${esc(short)}</b><span>${esc(d)}</span></a>`).join('')}</div>`;
     const rd = load('read', { done: [], last: null }); const lastP = rd.last && READ.find(x => x.id === rd.last);
     html += `<a class="tile wide" href="#/r${lastP ? '/' + lastP.id : ''}">${ICONS.book}<div><b>${lastP ? 'Continue reading' : 'Reader'}</b><span>${lastP ? esc(lastP.title + ' · ' + lastP.author) : 'Graded passages from the Vulgate to Virgil, every word tappable'}${rd.done.length ? ` · ${rd.done.length}/${READ.length} read` : ''}</span></div></a>`;
@@ -449,7 +450,7 @@
   }
   function pushHistory(nk, hw, gl) { S.history = [{ nk, hw, gl }].concat(S.history.filter(h => h.nk !== nk)).slice(0, 100); save('history', S.history); }
   function renderSaved() {
-    let html = `<h1>Saved words</h1>`;
+    let html = `<h1>My lexicon</h1><p class="lexintro">A <i>lexicon</i> is a word-hoard. Every word you save here becomes part of your own: look it up, read it in context, practise it until it is yours. The app is built around that single idea, enlarging the store of words you truly know.</p>`;
     html += S.favs.length ? `${S.favs.length >= 4 ? '<p><a class="btn primary" href="#/play/saved">Practice these words</a></p>' : ''}<div class="results">${S.favs.map(h => `<a class="row" href="#/w/${encodeURIComponent(h.nk)}"><span class="hw">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</span><span class="gl">${esc(h.gl || '')}</span></a>`).join('')}</div>` : `<div class="empty">Tap ☆ on a word to save it here.</div>`;
     html += `<h2>History</h2>`;
     html += S.history.length ? `<div class="results">${S.history.map(h => `<a class="row" href="#/w/${encodeURIComponent(h.nk)}"><span class="hw">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</span><span class="gl">${esc(h.gl || '')}</span></a>`).join('')}</div><p><button class="btn" id="clearhist">Clear history</button></p>` : `<div class="empty">No lookups yet.</div>`;
@@ -491,8 +492,8 @@
     if (btn) btn.textContent = 'Done';
     toast('All data downloaded for offline use');
   }
-  const SKINS = [['illustrata', 'Per Se', 'Orange and white, in the manner of a well-known Latin course'], ['rustic', 'Rustic', 'Parchment, Roman capitals, sketched icons'], ['navy', 'Navy Neon', 'Deep blue with neon mint'], ['peach', 'Peach', 'Soft apricot and terracotta'], ['blush', 'Blush', 'Rose pink'], ['sage', 'Sage', 'Cool greens'], ['ember', 'Ember', 'Charcoal with amber']];
-  const SKIN_PREVIEW = { auto: ['#f6f1e7', '#8b2e2e'], parchment: ['#f6f1e7', '#8b2e2e'], night: ['#1b1a17', '#e08a8a'], navy: ['#0a1730', '#3dffc6'], peach: ['#fff0e4', '#df6b35'], blush: ['#fceff4', '#d4336e'], sage: ['#edf3ea', '#2e6b4e'], ember: ['#1d1a1f', '#ff9d3f'], rustic: ['#ece0c4', '#7a3b1e'], illustrata: ['#e0702f', '#ffffff'] };
+  const SKINS = [['candida', 'Candida', 'Plain white'], ['illustrata', 'Per Sē', 'Orange and white, in the manner of a well-known Latin course'], ['rustic', 'Rūstica', 'Parchment, a handwritten title, sketched icons'], ['navy', 'Nox', 'Deep blue night with neon mint'], ['peach', 'Persica', 'Soft apricot and terracotta'], ['blush', 'Rosea', 'Rose pink'], ['sage', 'Salvia', 'Cool sage greens'], ['ember', 'Favilla', 'Charcoal with glowing amber']];
+  const SKIN_PREVIEW = { auto: ['#f6f1e7', '#8b2e2e'], parchment: ['#f6f1e7', '#8b2e2e'], night: ['#1b1a17', '#e08a8a'], navy: ['#0a1730', '#3dffc6'], peach: ['#fff0e4', '#df6b35'], blush: ['#fceff4', '#d4336e'], sage: ['#edf3ea', '#2e6b4e'], ember: ['#1d1a1f', '#ff9d3f'], rustic: ['#ece0c4', '#7a3b1e'], illustrata: ['#e0702f', '#ffffff'], candida: ['#ffffff', '#8b2e2e'] };
   function applyTheme() {
     const r = document.documentElement; let t = S.settings.theme;
     if (!SKINS.some(k => k[0] === t)) { t = (t === 'night' || t === 'dark') ? 'ember' : 'illustrata'; S.settings.theme = t; save('settings', S.settings); }
@@ -503,16 +504,19 @@
     requestAnimationFrame(() => { const bg = getComputedStyle(r).getPropertyValue('--bg').trim(); document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', bg)); });
   }
 
+  // ---------------- artwork ----------------
+  const ART = (typeof ARTWORK !== 'undefined') ? ARTWORK : {};
+  const artHTML = (key, cls) => { const a = ART[key]; if (!a) return ''; return `<figure class="art ${cls || ''}"><img src="art/${a.file}" alt="${esc(a.title)}" loading="lazy"><figcaption class="cap">${esc(a.artist)}, <i>${esc(a.title)}</i>${a.year ? ' (' + esc(a.year) + ')' : ''} · public domain</figcaption></figure>`; };
   // ---------------- reader ----------------
   const READ = typeof READER !== 'undefined' ? READER : [];
   const LEVELS = { 1: ['First steps', 'Short sentences, common words'], 2: ['Easy', 'Fables, epigrams, simple narrative'], 3: ['Intermediate', 'Caesar, Seneca, letters'], 4: ['Advanced', 'Oratory, lyric, Ovid'], 5: ['Expert', 'Epic, Lucretius, Tacitus'] };
   function renderReader() {
     const rd = load('read', { done: [], last: null });
-    let html = `<h1>Reader</h1><p class="small muted">Real Latin, graded from easiest to hardest. Tap any word for its meaning and form; show the translation sentence by sentence. Texts are public domain; Plutarch wrote in Greek, so he is not here.</p><div class="progress"><i style="width:${Math.round(100 * rd.done.length / READ.length)}%"></i></div>`;
+    let html = `<h1>Reader</h1>${artHTML('reader')}<p class="small muted">Real Latin, graded from easiest to hardest. Tap any word for its meaning and form; show the translation sentence by sentence. Texts are public domain; Plutarch wrote in Greek, so he is not here.</p><div class="progress"><i style="width:${Math.round(100 * rd.done.length / READ.length)}%"></i></div>`;
     for (const l of [1, 2, 3, 4, 5]) {
       const ps = READ.filter(p => p.level === l); if (!ps.length) continue;
       html += `<div class="lvlhead"><span class="lvl l${l}">Level ${l}</span><div><h2>${esc(LEVELS[l][0])}</h2><div class="d">${esc(LEVELS[l][1])}</div></div></div>`;
-      html += ps.map(p => `<a class="card pcard ${rd.done.includes(p.id) ? 'read' : ''}" href="#/r/${p.id}"><span class="t">${esc(p.title)}</span><span class="a">${esc(p.author)} · ${esc(p.work)} · ${p.la.join(' ').split(/\s+/).length} words</span></a>`).join('');
+      html += ps.map(p => `<a class="card pcard ${rd.done.includes(p.id) ? 'read' : ''}" href="#/r/${p.id}">${ART[p.art || p.id] ? `<img src="art/${ART[p.art || p.id].file}" alt="" loading="lazy">` : '<span></span>'}<span><span class="t">${esc(p.title)}</span><span class="a">${esc(p.author)} · ${esc(p.work)} · ${p.la.join(' ').split(/\s+/).length} words</span></span></a>`).join('');
     }
     view.innerHTML = html; window.scrollTo(0, 0);
   }
@@ -521,8 +525,8 @@
     const p = READ.find(x => x.id === id); if (!p) { view.innerHTML = `<div class="empty">Passage not found.</div>`; return; }
     const rd = load('read', { done: [], last: null }); rd.last = id; save('read', rd);
     const i = READ.indexOf(p); const prev = READ[i - 1], next = READ[i + 1]; const done = rd.done.includes(id);
-    let html = `<p class="small muted"><a href="#/r">Reader</a> · <span class="lvl l${p.level}">Level ${p.level}</span></p><h1>${esc(p.title)}</h1><p class="muted">${esc(p.author)}, <i>${esc(p.work)}</i></p><p class="small">${esc(p.intro)}</p>`;
-    html += `<div class="rtools"><button class="btn" id="trbtn">Show translation</button><button class="btn ${done ? 'on' : ''}" id="donebtn">${done ? 'Read ✓' : 'Mark as read'}</button><span class="small muted">Tap a word to look it up</span></div>`;
+    let html = `<p class="small muted"><a href="#/r">Reader</a> · <span class="lvl l${p.level}">Level ${p.level}</span></p><h1>${esc(p.title)}</h1><p class="muted">${esc(p.author)}, <i>${esc(p.work)}</i></p>${artHTML(p.art || p.id)}<p class="small">${esc(p.intro)}</p>`;
+    html += `<div class="rtools"><button class="btn" id="trbtn">Show translation</button><button class="btn ${done ? 'on' : ''}" id="donebtn">${done ? 'Read ✓' : 'Mark as read'}</button><a class="btn" href="#/play/cloze/${p.id}">Fill the blanks</a></div><p class="small muted" style="margin:2px 0 0">Tap a word to look it up.</p>`;
     html += `<div class="passage ${p.verse ? 'verse' : ''}" id="passage">${p.la.map((para, k) => `<p>${wordify(para)}</p><div class="tr"><div>${esc(p.en[k] || '')}</div></div>`).join('')}</div>`;
     if (p.notes && p.notes.length) html += `<h2>Notes</h2><dl class="notes">${p.notes.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;
     html += `<div class="pnav">${prev ? `<a class="btn" href="#/r/${prev.id}">‹ ${esc(prev.title)}</a>` : '<span></span>'}${next ? `<a class="btn primary" href="#/r/${next.id}">${esc(next.title)} ›</a>` : ''}</div>`;
@@ -601,11 +605,39 @@
     $('#again').onclick = newRound; renderStats();
   }
   function renderStats() { const st = load('stats', { rounds: 0, best: 0, streak: 0 }); const el = $('#gstats'); if (el) el.innerHTML = `<div><b>${st.rounds}</b><span>rounds</span></div><div><b>${st.best ? st.best.toFixed(1) + 's' : '—'}</b><span>best</span></div><div><b>${st.streak || 0}</b><span>day streak</span></div><div><b id="gtime">0s</b><span>time</span></div>`; }
+  // ---- cloze (fill the blanks) ----
+  const C = { p: null, blanks: [], cur: 0, right: 0, wrong: 0 };
+  function renderCloze(id) {
+    const pool = READ.filter(p => !id || p.id === id); const p = id ? READ.find(x => x.id === id) : pool[Math.floor(Math.random() * pool.length)];
+    if (!p) { view.innerHTML = `<div class="empty">No passage.</div>`; return; }
+    C.p = p; C.cur = 0; C.right = 0; C.wrong = 0;
+    const tokens = []; p.la.forEach((para, pi) => { para.split(/(\s+)/).forEach(t => tokens.push({ t, pi })); });
+    const cands = tokens.map((x, i) => ({ i, w: x.t.replace(/[^A-Za-z]/g, '') })).filter(x => x.w.length >= 4);
+    const n = Math.min(8, Math.max(4, Math.floor(cands.length / 6)));
+    const chosen = shuffle(cands.slice()).slice(0, n).sort((a, b) => a.i - b.i);
+    C.blanks = chosen.map((c, k) => { const alts = shuffle(cands.filter(o => o.w.toLowerCase() !== c.w.toLowerCase() && Math.abs(o.w.length - c.w.length) <= 2).map(o => o.w)); const opts = [c.w]; for (const a of alts) { if (opts.length >= 4) break; if (!opts.some(o => o.toLowerCase() === a.toLowerCase())) opts.push(a); } return { i: c.i, w: c.w, opts: shuffle(opts), k }; });
+    let html = `<p class="small muted"><a href="#/play">Practice</a> · Fill the blanks · <span class="lvl l${p.level}">Level ${p.level}</span></p><h1>${esc(p.title)}</h1><p class="muted">${esc(p.author)}, <i>${esc(p.work)}</i></p><p class="small">Pick the word that belongs in each gap. The sense of the sentence, and the endings around it, are your clues.</p>`;
+    const paras = p.la.map((_, pi) => tokens.map((x, i) => { const b = C.blanks.find(b => b.i === i); if (x.pi !== pi) return ''; if (!b) return esc(x.t); return x.t.replace(b.w, `<span class="blank" data-k="${b.k}" id="bl${b.k}">&nbsp;</span>`); }).join(''));
+    html += `<div class="cloze ${p.verse ? 'verse' : ''}">${paras.map(x => `<p>${x}</p>`).join('')}</div><div class="choices" id="choices"></div><div id="cresult"></div>`;
+    view.innerHTML = html; window.scrollTo(0, 0);
+    view.querySelector('.cloze').onclick = ev => { const b = ev.target.closest('.blank'); if (b && !b.classList.contains('ok') && !b.classList.contains('bad')) { C.cur = +b.dataset.k; showChoices(); } };
+    showChoices();
+  }
+  function showChoices() {
+    const b = C.blanks[C.cur]; const box = $('#choices'); view.querySelectorAll('.blank.cur').forEach(x => x.classList.remove('cur'));
+    if (!b) { box.innerHTML = ''; return; }
+    const el = document.getElementById('bl' + b.k); el.classList.add('cur'); el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    box.innerHTML = b.opts.map(o => `<button data-o="${esc(o)}">${esc(o)}</button>`).join('');
+    box.onclick = ev => { const btn = ev.target.closest('button'); if (!btn) return; const pick = btn.dataset.o; const ok = pick.toLowerCase() === b.w.toLowerCase(); el.textContent = ok ? b.w : pick; el.classList.add(ok ? 'ok' : 'bad'); if (ok) { C.right++; if (navigator.vibrate) navigator.vibrate(8); } else { C.wrong++; setTimeout(() => { el.textContent = b.w; el.classList.remove('bad'); el.classList.add('ok'); el.title = 'You chose ' + pick; }, 900); }
+      const next = C.blanks.findIndex((x, i) => i > C.cur && !document.getElementById('bl' + x.k).classList.contains('ok') && !document.getElementById('bl' + x.k).classList.contains('bad')); const any = C.blanks.findIndex(x => { const e = document.getElementById('bl' + x.k); return !e.classList.contains('ok') && !e.classList.contains('bad'); });
+      C.cur = next >= 0 ? next : any; if (C.cur < 0) { box.innerHTML = ''; const st = load('stats', { rounds: 0, best: 0 }); st.cloze = (st.cloze || 0) + 1; save('stats', st); $('#cresult').innerHTML = `<div class="card done"><div class="big">${C.right}/${C.blanks.length}</div><p>${C.right === C.blanks.length ? 'Every gap right.' : `${C.wrong} to look at again.`}</p><p><a class="btn primary" href="#/play/cloze">Another passage</a> <a class="btn" href="#/r/${C.p.id}">Read it with translation</a></p></div>`; } else setTimeout(showChoices, ok ? 250 : 950); };
+  }
   function renderPlay(arg) {
+    if (arg && arg.startsWith('cloze')) { renderCloze(arg.split('/')[1]); return; }
     if (arg === 'saved') G.source = 'saved';
-    view.innerHTML = `<h1>Practice</h1><div class="game-top"><div class="seg" id="modeseg"><button data-m="words" class="${G.mode === 'words' ? 'on' : ''}">Words</button><button data-m="forms" class="${G.mode === 'forms' ? 'on' : ''}">Forms</button></div><div class="seg" id="srcseg"><button data-s="common" class="${G.source === 'common' ? 'on' : ''}">Common</button><button data-s="saved" class="${G.source === 'saved' ? 'on' : ''}" ${S.favs.length < 4 ? 'disabled title="Save at least 4 words first"' : ''}>Saved</button></div></div><p class="small muted">${G.mode === 'words' ? 'Tap a Latin word, then its meaning.' : 'Tap a form, then the case or tense it belongs to.'}</p><div class="stat" id="gstats"></div><div class="board" id="board"></div>`;
+    view.innerHTML = `<h1>Practice</h1><div class="game-top"><div class="seg" id="modeseg"><button data-m="words" class="${G.mode === 'words' ? 'on' : ''}">Words</button><button data-m="forms" class="${G.mode === 'forms' ? 'on' : ''}">Forms</button><button data-m="cloze">Reading</button></div><div class="seg" id="srcseg"><button data-s="common" class="${G.source === 'common' ? 'on' : ''}">Common</button><button data-s="saved" class="${G.source === 'saved' ? 'on' : ''}" ${S.favs.length < 4 ? 'disabled title="Save at least 4 words first"' : ''}>Saved</button></div></div><p class="small muted">${G.mode === 'words' ? 'Tap a Latin word, then its meaning.' : 'Tap a form, then the case or tense it belongs to.'}</p><div class="stat" id="gstats"></div><div class="board" id="board"></div>`;
     renderStats();
-    $('#modeseg').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; G.mode = b.dataset.m; renderPlay(); };
+    $('#modeseg').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; if (b.dataset.m === 'cloze') { location.hash = '#/play/cloze'; return; } G.mode = b.dataset.m; renderPlay(); };
     $('#srcseg').onclick = ev => { const b = ev.target.closest('button'); if (!b || b.disabled) return; G.source = b.dataset.s; renderPlay(); };
     $('#board').onclick = ev => { const b = ev.target.closest('.tilebtn'); if (b && !b.classList.contains('ok')) tileTap(b); };
     newRound();
@@ -737,12 +769,13 @@
   async function route() {
     const h = location.hash || '#/';
     const m = h.match(/^#\/(play|gg|w|g|p|s|r)?\/?([^?]*)(\?(.*))?$/);
+    if (m && m[1] === 'play' && /^cloze/.test(m[2] || '')) { /* keep cloze/<id> in arg */ }
     const kind = m && m[1], arg = m ? decodeURIComponent(m[2] || '') : '', qs = m && m[4] ? new URLSearchParams(m[4]) : null;
     closeSheet();
     view.style.animation = 'none'; void view.offsetWidth; view.style.animation = '';
     try {
       if (h === '#/' || h === '') { setTab('home'); $('#q').value = ''; $('#clearq').hidden = true; renderHome(); }
-      else if (h === '#/saved') { setTab('saved'); renderSaved(); }
+      else if (h === '#/saved') { setTab(''); renderSaved(); }
       else if (h === '#/settings') { setTab(''); renderSettings(); }
       else if (h === '#/play' || kind === 'play') { setTab('play'); renderPlay(arg); }
       else if (h === '#/r' || kind === 'r') { setTab('read'); arg ? renderPassage(arg) : renderReader(); }
@@ -770,7 +803,7 @@
     const ta = ev.target.closest('.toggleabr'); if (ta) { const ls = ta.closest('details').querySelector('.ls'); ls.classList.toggle('abridged'); ta.textContent = ls.classList.contains('abridged') ? 'Show full entry' : 'Abridge'; applyClamps(); return; }
     const jp = ev.target.closest('[data-jump]'); if (jp) { ev.preventDefault(); const id = jp.dataset.jump; const el = id === 'forms' ? view.querySelector('.entry table.para, .entry .subtabs') : id === 'lsd' ? view.querySelector('.lsd') : document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     const sh = ev.target.closest('.sharebtn'); if (sh) { navigator.share({ title: sh.dataset.hw + ' — Lexicon Latinum', text: sh.dataset.hw, url: location.href }).catch(() => { }); return; }
-    const fv = ev.target.closest('.fav'); if (fv) { const nk = fv.dataset.nk, hw = fv.dataset.hw; if (S.favs.some(f => f.nk === nk)) { S.favs = S.favs.filter(f => f.nk !== nk); fv.textContent = '☆'; toast('Removed from saved'); } else { const hh = S.history.find(h => h.nk === nk); S.favs.unshift({ nk, hw, gl: hh ? hh.gl : '' }); fv.textContent = '★'; toast('Saved'); } save('favs', S.favs); return; }
+    const fv = ev.target.closest('.fav'); if (fv) { const nk = fv.dataset.nk, hw = fv.dataset.hw; if (S.favs.some(f => f.nk === nk)) { S.favs = S.favs.filter(f => f.nk !== nk); fv.textContent = '☆'; toast('Removed from my lexicon'); } else { const hh = S.history.find(h => h.nk === nk); S.favs.unshift({ nk, hw, gl: hh ? hh.gl : '' }); fv.textContent = '★'; toast('Added to my lexicon'); } save('favs', S.favs); return; }
     const dc = ev.target.closest('.decl'); if (dc) { showPplDecl(dc.dataset.ctx, dc.dataset.ppl); return; }
     if (ev.target.closest('.sheet-bg') || ev.target.closest('.sheet-close')) closeSheet();
     const q = ev.target.closest('.ls q'); if (q && !ev.target.closest('a')) { /* tap a Latin quotation word to look it up */ }
