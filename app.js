@@ -1,13 +1,13 @@
 /* Lexicon Latinum — app logic */
 (function () {
   'use strict';
-  const APP_BUILD = '2026-10-28.0159';
+  const APP_BUILD = '2026-10-28.0210';
   const $ = s => document.querySelector(s);
   const view = $('#view');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const load = (k, d) => { try { const v = localStorage.getItem('lx.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
   const save = (k, v) => { try { localStorage.setItem('lx.' + k, JSON.stringify(v)); } catch (e) { } };
-  const S = { settings: Object.assign({ macrons: true, rare: false, cit: true, theme: 'auto', font: 'mixed', fs: 16, abridge: true }, load('settings', {})), history: load('history', []), favs: load('favs', []) };
+  const S = { settings: Object.assign({ macrons: true, rare: false, cit: true, theme: 'illustrata', font: 'mixed', fs: 16, abridge: true }, load('settings', {})), history: load('history', []), favs: load('favs', []) };
   const norm = s => Morph.norm(s.normalize('NFD').replace(/[̀-ͯ]/g, '')).replace(/[^a-z' -]/g, '');
   const strip = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
 
@@ -70,6 +70,34 @@
     const ci = lsChunkFor(nk); const out = [];
     for (const c of [ci, ci + 1]) { if (c >= Data.lsBounds.length) continue; const chunk = await getJSON(`data/ls/${String(c).padStart(3, '0')}.json`).catch(() => []); for (const e of chunk) if (norm(e.k).replace(/\d+$/, '') === nk) out.push(e); }
     return out;
+  }
+  let SYN = null;
+  async function synData() {
+    if (SYN) return SYN;
+    const d = await getJSON('data/syn.json').catch(() => null); if (!d) return (SYN = { entries: [], refs: {}, byWord: new Map(), byMention: new Map() });
+    d.byWord = new Map(); d.byMention = new Map();
+    d.entries.forEach((e, i) => { e.h.forEach(w => { if (!d.byWord.has(w)) d.byWord.set(w, i); }); for (const m of e.t.matchAll(/<b class="syn">([^<]+)<\/b>/g)) { const w = norm(m[1]); if (!d.byMention.has(w)) d.byMention.set(w, new Set()); d.byMention.get(w).add(i); } });
+    return (SYN = d);
+  }
+  async function synonymsFor(nk) {
+    const d = await synData(); const ids = new Set();
+    const cands = [nk, nk.replace(/us$/, 'a'), nk.replace(/o$/, 'are'), nk.replace(/o$/, 'ere'), nk.replace(/o$/, 'ire'), nk.replace(/eo$/, 'ere'), nk.replace(/io$/, 'ire'), nk.replace(/or$/, 'ari'), nk.replace(/or$/, 'i'), nk.replace(/or$/, 'iri'), nk.replace(/is$/, 'e')];
+    for (const c of cands) { if (d.byWord.has(c)) ids.add(d.byWord.get(c)); const r = d.refs[c]; if (r && d.byWord.has(r)) ids.add(d.byWord.get(r)); }
+    for (const c of cands) if (d.byMention.has(c)) for (const i of d.byMention.get(c)) ids.add(i);
+    return [...ids].slice(0, 3).map(i => d.entries[i]);
+  }
+  const synLinkify = t => t.replace(/<b class="syn">([^<]+)<\/b>/g, (m, w) => `<a class="synlink" href="#/s/${encodeURIComponent(w.toLowerCase())}">${w}</a>`);
+  async function similarWords(rec) {
+    if (!rec) return [];
+    const STOP = new Set(['the', 'and', 'with', 'from', 'that', 'this', 'into', 'upon', 'over', 'also', 'very', 'make', 'thing', 'things', 'person', 'one', 'who', 'which']);
+    const words = rec[3].toLowerCase().replace(/\(.*?\)/g, ' ').split(/[^a-z]+/).filter(w => w.length >= 4 && !STOP.has(w)).slice(0, 4);
+    const tally = new Map();
+    await Promise.all(words.map(async (w, wi) => { const en = await enIndex(w[0]); for (const [nk, sc] of (en[w] || []).slice(0, 40)) { if (nk === rec[0]) continue; const t = tally.get(nk) || { n: 0, s: 0, first: false }; t.n++; t.s += sc + wi * 2; if (wi === 0) t.first = true; tally.set(nk, t); } }));
+    const list = [...tally.entries()].filter(([, t]) => t.n >= 2 || t.first).sort((a, b) => (b[1].n - a[1].n) || (a[1].s - b[1].s)).slice(0, 8);
+    const byL = {}; for (const [nk] of list) (byL[letterOf(nk)] = byL[letterOf(nk)] || []).push(nk);
+    const recs = new Map();
+    await Promise.all(Object.keys(byL).map(async L => { const arr = await idx(L); const m = new Map(arr.map(r => [r[0], r])); for (const nk of byL[L]) { const r = m.get(nk); if (r) recs.set(nk, r); } }));
+    return list.map(([nk]) => recs.get(nk)).filter(Boolean);
   }
   async function idxRecord(nk) { const arr = await idx(letterOf(nk)); return arr.find(r => r[0] === nk) || null; }
 
@@ -299,7 +327,8 @@
     const hw = rec ? rec[1] : (lsList[0] && lsList[0].h) || nk;
     pushHistory(nk, hw, rec ? rec[3] : '');
     const fav = S.favs.some(f => f.nk === nk);
-    let html = `<div class="hwline" style="justify-content:space-between"><h1 class="la" style="margin:4px 0">${esc(S.settings.macrons ? hw : strip(hw))}</h1><button class="iconbtn fav" data-nk="${esc(nk)}" data-hw="${esc(hw)}" aria-label="Save">${fav ? '★' : '☆'}</button></div>`;
+    let html = `<div class="hwline"><h1 class="la" style="margin:4px 0">${esc(S.settings.macrons ? hw : strip(hw))}</h1><span class="share"></span>${navigator.share ? `<button class="iconbtn sharebtn" data-hw="${esc(hw)}" data-nk="${esc(nk)}" aria-label="Share"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6"/></svg></button>` : ''}<button class="iconbtn fav" data-nk="${esc(nk)}" data-hw="${esc(hw)}" aria-label="Save">${fav ? '★' : '☆'}</button></div>`;
+    html += `<div class="jump"><a href="#" data-jump="e${entries[0] ? entries[0].i : ''}">Meaning</a>${entries.some(e => ['N', 'ADJ', 'V', 'PRON', 'NUM'].includes(e.p)) ? '<a href="#" data-jump="forms">Forms</a>' : ''}${lsList.length ? '<a href="#" data-jump="lsd">Lewis &amp; Short</a>' : ''}<a href="#" data-jump="extra">Synonyms</a></div>`;
     // pair L&S entries with Whitaker entries by part of speech; homonyms of the same class pair one-to-one in order
     const used = new Set();
     const groups = [];
@@ -317,8 +346,18 @@
     const rest = lsSorted.filter(l => !used.has(l.k));
     for (const g of groups) html += entryCard(g.e, g.ls, hlForm);
     for (const l of rest.filter(l => !used.has(l.k))) html += `<div class="card">${lsHTML(l)}</div>`;
+    html += `<div id="extra"><div class="skel" style="width:50%"></div></div>`;
     view.innerHTML = html;
     applyClamps();
+    (async () => {
+      const [syns, sim] = await Promise.all([synonymsFor(nk).catch(() => []), similarWords(rec).catch(() => [])]);
+      const box = $('#extra'); if (!box || norm(location.hash.replace(/^#\/w\//, '').split('?')[0]) !== nk) return;
+      let x = '';
+      if (sim.length) x += `<div class="section-title">Similar words</div><div class="similar">${sim.map(r => `<a href="#/w/${encodeURIComponent(r[0])}"><span class="la">${esc(S.settings.macrons ? r[1] : strip(r[1]))}</span><span class="gl">${esc(r[3].split(/[;,]/)[0].slice(0, 28))}</span></a>`).join('')}</div>`;
+      if (syns.length) x += `<div class="section-title">Synonyms distinguished</div>` + syns.map(e => `<div class="card syncard"><h3 style="margin-top:0" class="la">${esc(e.d.join(' · '))}</h3><p>${synLinkify(e.t)}</p></div>`).join('') + `<p class="small muted">From Döderlein's <i>Hand-book of Latin Synonymes</i> (1875), public domain. Tap a bold word to look it up.</p>`;
+      if (!x) x = `<p class="small muted">No synonym notes for this word.</p>`;
+      box.innerHTML = x;
+    })();
     if (hlForm) { const el = view.querySelector('.hl'); if (el) el.scrollIntoView({ block: 'center' }); }
     else window.scrollTo(0, 0);
   }
@@ -394,6 +433,8 @@
     if (hist.length) html += `<div class="section-title">Recent</div><div class="hscroll">${hist.map(mini).join('')}</div>`;
     if (favs.length) html += `<div class="section-title">Saved</div><div class="hscroll">${favs.map(mini).join('')}</div>`;
     html += `<div class="section-title">Grammar</div><div class="tiles">${Object.entries(GROUP_INFO).map(([g, [ic, d, short]]) => `<a class="tile" href="#/gg/${encodeURIComponent(g)}">${ICONS[ic]}<b>${esc(short)}</b><span>${esc(d)}</span></a>`).join('')}</div>`;
+    const st = load('stats', { rounds: 0, best: 0 });
+    html += `<a class="tile wide" href="#/play">${ICONS.dice}<div><b>Practice</b><span>Match Latin and English, or forms and their names${st.rounds ? ` · ${st.rounds} round${st.rounds === 1 ? '' : 's'} played` : ''}</span></div></a>`;
     html += `<div class="card tip"><div class="k">Tip</div>${esc(tip)}</div>`;
     html += `<footer class="credits">Definitions: <b>A Latin Dictionary</b> by Charlton T. Lewis &amp; Charles Short (1879), digitised by the Perseus Digital Library (CC BY-SA 4.0). Stems, inflections and short glosses: <b>Whitaker's Words</b> (public domain). ${Data.meta ? `${Data.meta.headwords.toLocaleString()} headwords · ${Data.meta.ls.toLocaleString()} Lewis &amp; Short entries · ${Data.meta.ww.toLocaleString()} Whitaker entries.` : ''}</footer>`;
     view.innerHTML = html;
@@ -406,22 +447,23 @@
   function pushHistory(nk, hw, gl) { S.history = [{ nk, hw, gl }].concat(S.history.filter(h => h.nk !== nk)).slice(0, 100); save('history', S.history); }
   function renderSaved() {
     let html = `<h1>Saved words</h1>`;
-    html += S.favs.length ? `<div class="results">${S.favs.map(h => `<a class="row" href="#/w/${encodeURIComponent(h.nk)}"><span class="hw">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</span></a>`).join('')}</div>` : `<div class="empty">Tap ☆ on a word to save it here.</div>`;
+    html += S.favs.length ? `${S.favs.length >= 4 ? '<p><a class="btn primary" href="#/play/saved">Practice these words</a></p>' : ''}<div class="results">${S.favs.map(h => `<a class="row" href="#/w/${encodeURIComponent(h.nk)}"><span class="hw">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</span><span class="gl">${esc(h.gl || '')}</span></a>`).join('')}</div>` : `<div class="empty">Tap ☆ on a word to save it here.</div>`;
     html += `<h2>History</h2>`;
-    html += S.history.length ? `<div class="results">${S.history.map(h => `<a class="row" href="#/w/${encodeURIComponent(h.nk)}"><span class="hw">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</span></a>`).join('')}</div><p><button class="btn" id="clearhist">Clear history</button></p>` : `<div class="empty">No lookups yet.</div>`;
+    html += S.history.length ? `<div class="results">${S.history.map(h => `<a class="row" href="#/w/${encodeURIComponent(h.nk)}"><span class="hw">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</span><span class="gl">${esc(h.gl || '')}</span></a>`).join('')}</div><p><button class="btn" id="clearhist">Clear history</button></p>` : `<div class="empty">No lookups yet.</div>`;
     view.innerHTML = html;
     const b = $('#clearhist'); if (b) b.onclick = () => { S.history = []; save('history', []); renderSaved(); };
   }
   function renderSettings() {
     const s = S.settings;
-    view.innerHTML = `<h1>Settings</h1>
+    view.innerHTML = `<h1>Settings</h1><div class="settings-h">Dictionary</div>
       <div class="setting"><div><b>Macrons</b><div class="d">Mark long vowels (ā ē ī ō ū) in headwords and tables.</div></div><button class="btn ${s.macrons ? 'on' : ''}" data-set="macrons">${s.macrons ? 'On' : 'Off'}</button></div>
       <div class="setting"><div><b>Rare &amp; archaic forms</b><div class="d">Show poetic, archaic and late variants (greyed) and the locative.</div></div><button class="btn ${s.rare ? 'on' : ''}" data-set="rare">${s.rare ? 'On' : 'Off'}</button></div>
       <div class="setting"><div><b>Abridged Lewis &amp; Short</b><div class="d">Show each sense trimmed to three lines with a "more" link; long entries become readable at a glance.</div></div><button class="btn ${s.abridge ? 'on' : ''}" data-set="abridge">${s.abridge ? 'On' : 'Off'}</button></div>
       <div class="setting"><div><b>Citations in Lewis &amp; Short</b><div class="d">Show the quotations and author references by default.</div></div><button class="btn ${s.cit ? 'on' : ''}" data-set="cit">${s.cit ? 'On' : 'Off'}</button></div>
-      <h2>Theme</h2><div class="swatches">${SKINS.map(([id, name, desc]) => `<button class="swatch ${s.theme === id ? 'on' : ''}" data-skin="${id}" title="${esc(desc)}"><div class="pv" style="background:${SKIN_PREVIEW[id][0]};color:${SKIN_PREVIEW[id][1]}">Aa āē</div><div class="nm">${esc(name)}</div></button>`).join('')}</div>
+      <div class="settings-h">Appearance</div><h2>Theme</h2><div class="swatches">${SKINS.map(([id, name, desc]) => `<button class="swatch ${s.theme === id ? 'on' : ''}" data-skin="${id}" title="${esc(desc)}"><div class="pv" style="background:${SKIN_PREVIEW[id][0]};color:${SKIN_PREVIEW[id][1]}">Aa āē</div><div class="nm">${esc(name)}</div></button>`).join('')}</div>
       <h2>Typeface</h2><div class="fontpick">${[['mixed', 'Mixed', 'EB Garamond for Latin, system sans for the rest'], ['serif', 'Serif', 'EB Garamond everywhere'], ['sans', 'Sans', 'System sans everywhere']].map(([id, name, desc]) => `<button class="${s.font === id ? 'on' : ''}" data-font="${id}"><span class="big" style="font-family:${id === 'sans' ? 'var(--sans-stack)' : 'var(--serif-stack)'}">${esc(name)} · amīcus</span><span class="sm">${esc(desc)}</span></button>`).join('')}</div>
       <div class="setting"><div><b>Text size</b></div><input type="range" id="fs" min="14" max="22" step="1" value="${s.fs}"></div>
+      <div class="settings-h">Data &amp; updates</div>
       <div class="setting"><div><b>Offline data</b><div class="d">Download the whole dictionary (about 80 MB) so lookups work without a connection. Looked-up words are cached automatically anyway.</div></div><button class="btn" id="dlall">Download all</button></div>
       <div class="setting"><div><b>App version</b><div class="d">Build ${esc(APP_BUILD)}. The app checks for a newer version each time it opens and reloads itself when one is found.</div></div><button class="btn" id="chkupd">Check for updates</button></div>
       <div class="setting"><div><b>Reload app</b><div class="d">Force a fresh copy of the app from the server (keeps your saved words and settings).</div></div><button class="btn" id="hardreload">Reload</button></div>
@@ -438,7 +480,7 @@
   }
   async function downloadAll() {
     await Data.ready;
-    const files = ['data/inflects.json', 'data/ls_index.json', 'data/meta.json'];
+    const files = ['data/inflects.json', 'data/ls_index.json', 'data/meta.json', 'data/syn.json'];
     const seen = new Set(); for (const L of 'abcdefghiklmnopqrstuwxyz_') { const g = groupFile(L) || L; if (seen.has(g)) continue; seen.add(g); files.push(`data/idx/${g}.json`, `data/ww/${g}.json`, `data/en/${g}.json`); }
     for (let i = 0; i < Data.lsBounds.length; i++) files.push(`data/ls/${String(i).padStart(3, '0')}.json`);
     let n = 0; const btn = $('#dlall');
@@ -446,18 +488,74 @@
     if (btn) btn.textContent = 'Done';
     toast('All data downloaded for offline use');
   }
-  const SKINS = [['auto', 'Automatic', 'Parchment by day, Night in dark mode'], ['parchment', 'Parchment', 'Warm cream and oxblood'], ['night', 'Night', 'Dark, warm neutrals'], ['navy', 'Navy Neon', 'Deep blue with neon mint'], ['peach', 'Peach', 'Soft apricot and terracotta'], ['blush', 'Blush', 'Rose pink'], ['sage', 'Sage', 'Cool greens'], ['ember', 'Ember', 'Charcoal with amber'], ['rustic', 'Rustic', 'Parchment, Roman capitals, sketched icons'], ['illustrata', 'Per Se', 'Orange and white, in the manner of a well-known Latin course']];
+  const SKINS = [['illustrata', 'Per Se', 'Orange and white, in the manner of a well-known Latin course'], ['rustic', 'Rustic', 'Parchment, Roman capitals, sketched icons'], ['navy', 'Navy Neon', 'Deep blue with neon mint'], ['peach', 'Peach', 'Soft apricot and terracotta'], ['blush', 'Blush', 'Rose pink'], ['sage', 'Sage', 'Cool greens'], ['ember', 'Ember', 'Charcoal with amber']];
   const SKIN_PREVIEW = { auto: ['#f6f1e7', '#8b2e2e'], parchment: ['#f6f1e7', '#8b2e2e'], night: ['#1b1a17', '#e08a8a'], navy: ['#0a1730', '#3dffc6'], peach: ['#fff0e4', '#df6b35'], blush: ['#fceff4', '#d4336e'], sage: ['#edf3ea', '#2e6b4e'], ember: ['#1d1a1f', '#ff9d3f'], rustic: ['#ece0c4', '#7a3b1e'], illustrata: ['#e0702f', '#ffffff'] };
   function applyTheme() {
-    const r = document.documentElement; const t = S.settings.theme;
-    if (t === 'auto' || t === 'light' || t === 'dark') { delete r.dataset.skin; if (t === 'light' || t === 'dark') { S.settings.theme = t === 'light' ? 'parchment' : 'night'; r.dataset.skin = S.settings.theme; } }
-    else r.dataset.skin = t;
+    const r = document.documentElement; let t = S.settings.theme;
+    if (!SKINS.some(k => k[0] === t)) { t = (t === 'night' || t === 'dark') ? 'ember' : 'illustrata'; S.settings.theme = t; save('settings', S.settings); }
+    r.dataset.skin = t;
     if (S.settings.font === 'mixed') delete r.dataset.font; else r.dataset.font = S.settings.font;
     if (window.LX_EMBEDDED) r.dataset.embedded = '1';
     r.style.setProperty('--fs', S.settings.fs + 'px');
     requestAnimationFrame(() => { const bg = getComputedStyle(r).getPropertyValue('--bg').trim(); document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', bg)); });
   }
 
+  // ---------------- practice: matching game ----------------
+  const G = { mode: 'words', source: 'common', pairs: [], left: null, right: null, matched: 0, start: 0, timer: null, wrong: 0 };
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  async function makeWordPairs() {
+    const pool = G.source === 'saved' && S.favs.length >= 4 ? S.favs.map(f => f.nk) : WOTD.slice();
+    const picks = shuffle(pool.slice()).slice(0, 12); const pairs = [];
+    for (const nk of picks) { const r = await idxRecord(norm(nk)); if (!r) continue; const en = r[3].split(/;/)[0].split(/,/)[0].replace(/\(.*?\)/g, '').trim(); if (!en || en.length > 30) continue; const la = S.settings.macrons ? r[1] : strip(r[1]); if (pairs.some(p => p.en.toLowerCase() === en.toLowerCase() || p.la === la)) continue; pairs.push({ la, en, nk: r[0] }); if (pairs.length === 5) break; }
+    return pairs;
+  }
+  async function makeFormPairs() {
+    const cand = shuffle(WOTD.slice());
+    for (const w of cand) {
+      const rec = await idxRecord(norm(w)); if (!rec) continue; const ww = await wwChunk(letterOf(rec[0])); const e = rec[5].map(id => ww._map.get(id)).find(e => e && (e.p === 'N' || e.p === 'V' || e.p === 'ADJ')); if (!e) continue;
+      const forms = Morph.generate(e).filter(x => x.common && (x.r.p === 'N' || x.r.p === 'V' || x.r.p === 'ADJ') && !(x.r.p === 'ADJ' && x.r.co !== 'POS'));
+      const f = fmt(e); const seen = new Set(), byLabel = new Set(), pairs = [];
+      for (const x of shuffle(forms)) { const la = f(x); const en = Morph.describe(x.r); if (seen.has(x.f) || byLabel.has(en) || forms.filter(y => y.f === x.f).length > 1) continue; seen.add(x.f); byLabel.add(en); pairs.push({ la, en, nk: rec[0] }); if (pairs.length === 5) break; }
+      if (pairs.length === 5) { G.word = S.settings.macrons ? rec[1] : strip(rec[1]); return pairs; }
+    }
+    return [];
+  }
+  async function newRound() {
+    G.pairs = []; G.left = G.right = null; G.matched = 0; G.wrong = 0; G.word = null;
+    $('#board').innerHTML = `<div class="skel"></div><div class="skel"></div>`;
+    await Data.ready;
+    G.pairs = G.mode === 'forms' ? await makeFormPairs() : await makeWordPairs();
+    if (G.pairs.length < 4) { $('#board').innerHTML = `<div class="empty">Could not build a round. Check your connection.</div>`; return; }
+    const L = G.pairs.map((p, i) => ({ i, t: p.la })), R = shuffle(G.pairs.map((p, i) => ({ i, t: p.en })));
+    $('#board').innerHTML = `${G.word ? `<p class="small muted" style="grid-column:1/-1;margin:0">Forms of <b class="la">${esc(G.word)}</b></p>` : ''}<div class="col">${L.map(x => `<button class="tilebtn la" data-side="l" data-i="${x.i}">${esc(x.t)}</button>`).join('')}</div><div class="col">${R.map(x => `<button class="tilebtn" data-side="r" data-i="${x.i}">${esc(x.t)}</button>`).join('')}</div>`;
+    G.start = Date.now(); clearInterval(G.timer); G.timer = setInterval(() => { const t = $('#gtime'); if (t) t.textContent = ((Date.now() - G.start) / 1000).toFixed(0) + 's'; }, 500);
+  }
+  function tileTap(btn) {
+    const side = btn.dataset.side, i = +btn.dataset.i;
+    $('#board').querySelectorAll(`.tilebtn[data-side="${side}"].sel`).forEach(b => b.classList.remove('sel'));
+    btn.classList.add('sel'); if (side === 'l') G.left = i; else G.right = i;
+    if (G.left === null || G.right === null) return;
+    const l = $('#board').querySelector('.tilebtn[data-side="l"].sel'), r = $('#board').querySelector('.tilebtn[data-side="r"].sel');
+    if (G.left === G.right) { l.classList.remove('sel'); r.classList.remove('sel'); l.classList.add('ok'); r.classList.add('ok'); G.matched++; if (navigator.vibrate) navigator.vibrate(10); if (G.matched === G.pairs.length) finishRound(); }
+    else { G.wrong++; l.classList.add('bad'); r.classList.add('bad'); setTimeout(() => { l.classList.remove('sel', 'bad'); r.classList.remove('sel', 'bad'); }, 380); }
+    G.left = G.right = null;
+  }
+  function finishRound() {
+    clearInterval(G.timer); const secs = (Date.now() - G.start) / 1000; const st = load('stats', { rounds: 0, best: 0, today: '', streak: 0 });
+    st.rounds++; if (!st.best || secs < st.best) st.best = secs; const today = new Date().toISOString().slice(0, 10); if (st.today !== today) { const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10); st.streak = st.today === y ? st.streak + 1 : 1; st.today = today; } save('stats', st);
+    $('#board').innerHTML = `<div class="done" style="grid-column:1/-1"><div class="big">${secs.toFixed(1)}s</div><p>${G.wrong ? `${G.wrong} slip${G.wrong === 1 ? '' : 's'}` : 'Perfect round!'} · best ${st.best.toFixed(1)}s</p><p><button class="btn primary" id="again">Next round</button> ${G.pairs[0] && G.mode === 'words' ? `<a class="btn" href="#/w/${encodeURIComponent(G.pairs[0].nk)}">Look up a word</a>` : ''}</p><p class="similar">${G.pairs.map(p => `<a href="#/w/${encodeURIComponent(p.nk)}"><span class="la">${esc(p.la)}</span><span class="gl">${esc(p.en)}</span></a>`).join('')}</p></div>`;
+    $('#again').onclick = newRound; renderStats();
+  }
+  function renderStats() { const st = load('stats', { rounds: 0, best: 0, streak: 0 }); const el = $('#gstats'); if (el) el.innerHTML = `<div><b>${st.rounds}</b><span>rounds</span></div><div><b>${st.best ? st.best.toFixed(1) + 's' : '—'}</b><span>best</span></div><div><b>${st.streak || 0}</b><span>day streak</span></div><div><b id="gtime">0s</b><span>time</span></div>`; }
+  function renderPlay(arg) {
+    if (arg === 'saved') G.source = 'saved';
+    view.innerHTML = `<h1>Practice</h1><div class="game-top"><div class="seg" id="modeseg"><button data-m="words" class="${G.mode === 'words' ? 'on' : ''}">Words</button><button data-m="forms" class="${G.mode === 'forms' ? 'on' : ''}">Forms</button></div><div class="seg" id="srcseg"><button data-s="common" class="${G.source === 'common' ? 'on' : ''}">Common</button><button data-s="saved" class="${G.source === 'saved' ? 'on' : ''}" ${S.favs.length < 4 ? 'disabled title="Save at least 4 words first"' : ''}>Saved</button></div></div><p class="small muted">${G.mode === 'words' ? 'Tap a Latin word, then its meaning.' : 'Tap a form, then the case or tense it belongs to.'}</p><div class="stat" id="gstats"></div><div class="board" id="board"></div>`;
+    renderStats();
+    $('#modeseg').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; G.mode = b.dataset.m; renderPlay(); };
+    $('#srcseg').onclick = ev => { const b = ev.target.closest('button'); if (!b || b.disabled) return; G.source = b.dataset.s; renderPlay(); };
+    $('#board').onclick = ev => { const b = ev.target.closest('.tilebtn'); if (b && !b.classList.contains('ok')) tileTap(b); };
+    newRound();
+  }
   // ---------------- grammar ----------------
   const GRAM = typeof GRAMMAR !== 'undefined' ? GRAMMAR : [];
   const PACK_GROUP = { 'Nouns': id => id.startsWith('N-'), 'Adjectives & Adverbs': id => id.startsWith('ADJ-') || id === 'ADV', 'Verbs': id => id.startsWith('V-'), 'Pronouns': id => id.startsWith('PRON') || id === 'NUM' };
@@ -584,13 +682,14 @@
   function setTab(name) { document.querySelectorAll('#tabs a').forEach(a => a.classList.toggle('active', a.dataset.tab === name)); }
   async function route() {
     const h = location.hash || '#/';
-    const m = h.match(/^#\/(gg|w|g|p|s)?\/?([^?]*)(\?(.*))?$/);
+    const m = h.match(/^#\/(play|gg|w|g|p|s)?\/?([^?]*)(\?(.*))?$/);
     const kind = m && m[1], arg = m ? decodeURIComponent(m[2] || '') : '', qs = m && m[4] ? new URLSearchParams(m[4]) : null;
     closeSheet();
     try {
       if (h === '#/' || h === '') { setTab('home'); $('#q').value = ''; $('#clearq').hidden = true; renderHome(); }
       else if (h === '#/saved') { setTab('saved'); renderSaved(); }
-      else if (h === '#/settings') { setTab('settings'); renderSettings(); }
+      else if (h === '#/settings') { setTab(''); renderSettings(); }
+      else if (h === '#/play' || kind === 'play') { setTab('play'); renderPlay(arg); }
       else if (h === '#/g') { setTab('grammar'); renderGrammarIndex(); window.scrollTo(0, 0); }
       else if (kind === 'w') { setTab('home'); await renderWord(norm(arg), qs && qs.get('f') ? norm(qs.get('f')) : null); }
       else if (kind === 's') { setTab('home'); $('#q').value = arg; $('#clearq').hidden = !arg; await doSearch(arg); }
@@ -613,6 +712,8 @@
     const tb = ev.target.closest('.subtabs button'); if (tb) { const grp = tb.parentElement; grp.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === tb)); grp.querySelectorAll('button').forEach(b => { const pane = document.getElementById(b.dataset.show); if (pane) pane.hidden = b !== tb; }); return; }
     const tc = ev.target.closest('.togglecit'); if (tc) { const ls = tc.closest('details').querySelector('.ls'); ls.classList.toggle('nocit'); tc.textContent = ls.classList.contains('nocit') ? 'Show citations' : 'Hide citations'; applyClamps(); return; }
     const ta = ev.target.closest('.toggleabr'); if (ta) { const ls = ta.closest('details').querySelector('.ls'); ls.classList.toggle('abridged'); ta.textContent = ls.classList.contains('abridged') ? 'Show full entry' : 'Abridge'; applyClamps(); return; }
+    const jp = ev.target.closest('[data-jump]'); if (jp) { ev.preventDefault(); const id = jp.dataset.jump; const el = id === 'forms' ? view.querySelector('.entry table.para, .entry .subtabs') : id === 'lsd' ? view.querySelector('.lsd') : document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    const sh = ev.target.closest('.sharebtn'); if (sh) { navigator.share({ title: sh.dataset.hw + ' — Lexicon Latinum', text: sh.dataset.hw, url: location.href }).catch(() => { }); return; }
     const fv = ev.target.closest('.fav'); if (fv) { const nk = fv.dataset.nk, hw = fv.dataset.hw; if (S.favs.some(f => f.nk === nk)) { S.favs = S.favs.filter(f => f.nk !== nk); fv.textContent = '☆'; toast('Removed from saved'); } else { const hh = S.history.find(h => h.nk === nk); S.favs.unshift({ nk, hw, gl: hh ? hh.gl : '' }); fv.textContent = '★'; toast('Saved'); } save('favs', S.favs); return; }
     const dc = ev.target.closest('.decl'); if (dc) { showPplDecl(dc.dataset.ctx, dc.dataset.ppl); return; }
     if (ev.target.closest('.sheet-bg') || ev.target.closest('.sheet-close')) closeSheet();
