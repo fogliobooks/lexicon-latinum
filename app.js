@@ -1,7 +1,7 @@
 /* Lexicon Latinum — app logic */
 (function () {
   'use strict';
-  const APP_BUILD = '2026-10-28.0316';
+  const APP_BUILD = '2026-10-28.0328';
   const $ = s => document.querySelector(s);
   const view = $('#view');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -424,6 +424,11 @@
     ref: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M14 4v5h5M8 13h8M8 17h6"/></svg>',
     book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-2-1.5-5-2-8-2v14c3 0 6 .5 8 2 2-1.5 5-2 8-2V4c-3 0-6 .5-8 2z"/><path d="M12 6v14"/></svg>',
     dice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2" fill="currentColor"/><circle cx="15" cy="15" r="1.2" fill="currentColor"/><circle cx="15" cy="9" r="1.2" fill="currentColor"/><circle cx="9" cy="15" r="1.2" fill="currentColor"/></svg>',
+    verbum: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="9.5" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="9.5" width="5" height="5" rx="1" fill="currentColor"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><rect x="16" y="9.5" width="5" height="5" rx="1" fill="currentColor"/><rect x="3" y="16" width="5" height="5" rx="1"/><rect x="9.5" y="16" width="5" height="5" rx="1" fill="currentColor"/><rect x="16" y="16" width="5" height="5" rx="1"/></svg>',
+    nexus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6h7M6 8.5v7M18 8.5v7M8.5 18h7"/></svg>',
+    corona: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="4.5" r="1.4" fill="currentColor"/><circle cx="19" cy="8.5" r="1.4" fill="currentColor"/><circle cx="19" cy="15.5" r="1.4" fill="currentColor"/><circle cx="12" cy="19.5" r="1.4" fill="currentColor"/><circle cx="5" cy="15.5" r="1.4" fill="currentColor"/><circle cx="5" cy="8.5" r="1.4" fill="currentColor"/><path d="M12 4.5L19 15.5L5 15.5z"/></svg>',
+    anagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h4l4 10h4"/><path d="M3 17h4l4-10h4"/><path d="M18 5l3 2-3 2M18 15l3 2-3 2"/></svg>',
+    hang: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21h8M7 21V3h9v3"/><circle cx="16" cy="9.5" r="2.5"/><path d="M16 12v5M13 14.5l3-1.5 3 1.5M16 17l-2 3M16 17l2 3"/></svg>',
   };
   const GROUP_INFO = { 'Nouns': ['noun', 'Five declensions, every case', 'Nouns'], 'Adjectives & Adverbs': ['adj', 'Agreement and the three degrees', 'Adjectives'], 'Pronouns': ['pron', 'ego, hic, ille, is, quī and friends', 'Pronouns'], 'Verbs': ['verb', 'Conjugations, tenses, moods, deponents, irregulars', 'Verbs'], 'Syntax': ['syntax', 'Ablative absolute, indirect statement, cum clauses, conditions…', 'Syntax'], 'Reference': ['ref', 'Reading an entry, abbreviations', 'Reference'] };
   async function renderHome() {
@@ -438,7 +443,7 @@
     const rd = load('read', { done: [], last: null }); const lastP = rd.last && READ.find(x => x.id === rd.last);
     html += `<a class="tile wide" href="#/r${lastP ? '/' + lastP.id : ''}">${ICONS.book}<div><b>${lastP ? 'Continue reading' : 'Reader'}</b><span>${lastP ? esc(lastP.title) + ' <i>· ' + esc(lastP.author) + '</i>' : 'Graded passages from the Vulgate to Virgil, every word tappable'}</span>${rd.done.length ? `<div class="meta2"><em>${rd.done.length} of ${READ.length} read</em></div>` : ''}</div></a>`;
     const st = load('stats', { rounds: 0, best: 0 });
-    html += `<a class="tile wide" href="#/play">${ICONS.dice}<div><b>Practice</b><span>Match words, name forms, fill the blanks</span>${st.rounds ? `<div class="meta2"><em>${st.rounds} round${st.rounds === 1 ? '' : 's'} played</em>${st.best ? `<em>best ${st.best.toFixed(1)}s</em>` : ''}</div>` : ''}</div></a>`;
+    html += `<a class="tile wide" href="#/play">${ICONS.dice}<div><b>Games</b><span>Verbum, Nexus, Corōna, matching and more</span>${st.rounds ? `<div class="meta2"><em>${st.rounds} round${st.rounds === 1 ? '' : 's'} played</em>${st.best ? `<em>best ${st.best.toFixed(1)}s</em>` : ''}</div>` : ''}</div></a>`;
     html += `<div class="card tip"><div class="k">Tip</div>${esc(tip)}</div>`;
     html += `<footer class="credits">Definitions: <b>A Latin Dictionary</b> by Charlton T. Lewis &amp; Charles Short (1879), digitised by the Perseus Digital Library (CC BY-SA 4.0). Stems, inflections and short glosses: <b>Whitaker's Words</b> (public domain). ${Data.meta ? `${Data.meta.headwords.toLocaleString()} headwords · ${Data.meta.ls.toLocaleString()} Lewis &amp; Short entries · ${Data.meta.ww.toLocaleString()} Whitaker entries.` : ''}</footer>`;
     view.innerHTML = html;
@@ -451,7 +456,7 @@
   function pushHistory(nk, hw, gl) { S.history = [{ nk, hw, gl }].concat(S.history.filter(h => h.nk !== nk)).slice(0, 100); save('history', S.history); }
   function renderSaved() {
     let html = `<h1>My lexicon</h1><p class="lexintro">A <i>lexicon</i> is a word-hoard. Every word you save here becomes part of your own: look it up, read it in context, practise it until it is yours. The app is built around that single idea, enlarging the store of words you truly know.</p>`;
-    html += S.favs.length ? `${S.favs.length >= 4 ? '<p><a class="btn primary" href="#/play/saved">Practice these words</a></p>' : ''}<div class="results">${S.favs.map(h => `<a class="row" href="#/w/${encodeURIComponent(h.nk)}"><span class="hw">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</span><span class="gl">${esc(h.gl || '')}</span></a>`).join('')}</div>` : `<div class="empty">Tap ☆ on a word to save it here.</div>`;
+    html += S.favs.length ? `${S.favs.length >= 4 ? '<p><a class="btn primary" href="#/play/saved">Play with these words</a></p>' : ''}<div class="results">${S.favs.map(h => `<a class="row" href="#/w/${encodeURIComponent(h.nk)}"><span class="hw">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</span><span class="gl">${esc(h.gl || '')}</span></a>`).join('')}</div>` : `<div class="empty">Tap ☆ on a word to save it here.</div>`;
     html += `<h2>History</h2>`;
     html += S.history.length ? `<div class="results">${S.history.map(h => `<a class="row" href="#/w/${encodeURIComponent(h.nk)}"><span class="hw">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</span><span class="gl">${esc(h.gl || '')}</span></a>`).join('')}</div><p><button class="btn" id="clearhist">Clear history</button></p>` : `<div class="empty">No lookups yet.</div>`;
     view.innerHTML = html;
@@ -629,9 +634,13 @@
     if (G.pairs.length < 4) { $('#board').innerHTML = `<div class="empty">Could not build a round. Check your connection.</div>`; return; }
     const L = G.pairs.map((p, i) => ({ i, t: p.la })), R = shuffle(G.pairs.map((p, i) => ({ i, t: p.en })));
     $('#board').innerHTML = `${G.word ? `<p class="small muted" style="grid-column:1/-1;margin:0">Forms of <b class="la">${esc(G.word)}</b></p>` : ''}<div class="col">${L.map(x => `<button class="tilebtn la" data-side="l" data-i="${x.i}">${esc(x.t)}</button>`).join('')}</div><div class="col">${R.map(x => `<button class="tilebtn" data-side="r" data-i="${x.i}">${esc(x.t)}</button>`).join('')}</div>`;
-    G.start = Date.now(); clearInterval(G.timer); G.timer = setInterval(() => { const t = $('#gtime'); if (t) t.textContent = ((Date.now() - G.start) / 1000).toFixed(0) + 's'; }, 500);
+    clearInterval(G.timer); G.running = false; const t0 = $('#gtime'); if (t0) t0.textContent = '0s';
+    $('#board').insertAdjacentHTML('beforeend', `<div class="veil" id="veil"><button class="btn primary" id="gstart">Start</button><span class="small muted">The clock starts when you do</span></div>`);
+    $('#board').classList.add('covered');
+    $('#gstart').onclick = () => { $('#veil').remove(); $('#board').classList.remove('covered'); G.running = true; G.start = Date.now(); G.timer = setInterval(() => { const t = $('#gtime'); if (t) t.textContent = ((Date.now() - G.start) / 1000).toFixed(0) + 's'; }, 500); };
   }
   function tileTap(btn) {
+    if (!G.running) return;
     const side = btn.dataset.side, i = +btn.dataset.i;
     $('#board').querySelectorAll(`.tilebtn[data-side="${side}"].sel`).forEach(b => b.classList.remove('sel'));
     btn.classList.add('sel'); if (side === 'l') G.left = i; else G.right = i;
@@ -659,7 +668,7 @@
     const n = Math.min(8, Math.max(4, Math.floor(cands.length / 6)));
     const chosen = shuffle(cands.slice()).slice(0, n).sort((a, b) => a.i - b.i);
     C.blanks = chosen.map((c, k) => { const alts = shuffle(cands.filter(o => o.w.toLowerCase() !== c.w.toLowerCase() && Math.abs(o.w.length - c.w.length) <= 2).map(o => o.w)); const opts = [c.w]; for (const a of alts) { if (opts.length >= 4) break; if (!opts.some(o => o.toLowerCase() === a.toLowerCase())) opts.push(a); } return { i: c.i, w: c.w, opts: shuffle(opts), k }; });
-    let html = `<p class="small muted"><a href="#/play">Practice</a> · Fill the blanks · <span class="lvl l${p.level}">Level ${p.level}</span></p><h1>${esc(p.title)}</h1><p class="muted">${esc(p.author)}, <i>${esc(p.work)}</i></p><p class="small">Pick the word that belongs in each gap. The sense of the sentence, and the endings around it, are your clues.</p>`;
+    let html = `<p class="small muted"><a href="#/play">Games</a> · Lacūnae · <span class="lvl l${p.level}">Level ${p.level}</span></p><h1>${esc(p.title)}</h1><p class="muted">${esc(p.author)}, <i>${esc(p.work)}</i></p><p class="small">Pick the word that belongs in each gap. The sense of the sentence, and the endings around it, are your clues.</p>`;
     const paras = p.la.map((_, pi) => tokens.map((x, i) => { const b = C.blanks.find(b => b.i === i); if (x.pi !== pi) return ''; if (!b) return esc(x.t); return x.t.replace(b.w, `<span class="blank" data-k="${b.k}" id="bl${b.k}">&nbsp;</span>`); }).join(''));
     html += `<div class="cloze ${p.verse ? 'verse' : ''}">${paras.map(x => `<p>${x}</p>`).join('')}</div><div class="choices" id="choices"></div><div id="cresult"></div>`;
     view.innerHTML = html; window.scrollTo(0, 0);
@@ -673,17 +682,233 @@
     box.innerHTML = b.opts.map(o => `<button data-o="${esc(o)}">${esc(o)}</button>`).join('');
     box.onclick = ev => { const btn = ev.target.closest('button'); if (!btn) return; const pick = btn.dataset.o; const ok = pick.toLowerCase() === b.w.toLowerCase(); el.textContent = ok ? b.w : pick; el.classList.add(ok ? 'ok' : 'bad'); if (ok) { C.right++; if (navigator.vibrate) navigator.vibrate(8); } else { C.wrong++; setTimeout(() => { el.textContent = b.w; el.classList.remove('bad'); el.classList.add('ok'); el.title = 'You chose ' + pick; }, 900); }
       const next = C.blanks.findIndex((x, i) => i > C.cur && !document.getElementById('bl' + x.k).classList.contains('ok') && !document.getElementById('bl' + x.k).classList.contains('bad')); const any = C.blanks.findIndex(x => { const e = document.getElementById('bl' + x.k); return !e.classList.contains('ok') && !e.classList.contains('bad'); });
-      C.cur = next >= 0 ? next : any; if (C.cur < 0) { box.innerHTML = ''; const st = load('stats', { rounds: 0, best: 0 }); st.cloze = (st.cloze || 0) + 1; save('stats', st); $('#cresult').innerHTML = `<div class="card done"><div class="big">${C.right}/${C.blanks.length}</div><p>${C.right === C.blanks.length ? 'Every gap right.' : `${C.wrong} to look at again.`}</p><p><a class="btn primary" href="#/play/cloze">Another passage</a> <a class="btn" href="#/r/${C.p.id}">Read it with translation</a></p></div>`; } else setTimeout(showChoices, ok ? 250 : 950); };
+      C.cur = next >= 0 ? next : any; if (C.cur < 0) { box.innerHTML = ''; const st = load('stats', { rounds: 0, best: 0 }); st.cloze = (st.cloze || 0) + 1; save('stats', st); $('#cresult').innerHTML = `<div class="card done"><div class="big">${C.right}/${C.blanks.length}</div><p>${C.right === C.blanks.length ? 'Every gap right.' : `${C.wrong} to look at again.`}</p><p><a class="btn primary" href="#/play/cloze">Another passage</a> <a class="btn" href="#/play">Games</a> <a class="btn" href="#/r/${C.p.id}">Read it with translation</a></p></div>`; } else setTimeout(showChoices, ok ? 250 : 950); };
   }
-  function renderPlay(arg) {
-    if (arg && arg.startsWith('cloze')) { renderCloze(arg.split('/')[1]); return; }
-    if (arg === 'saved') G.source = 'saved';
-    view.innerHTML = `<h1>Practice</h1><div class="game-top"><div class="seg" id="modeseg"><button data-m="words" class="${G.mode === 'words' ? 'on' : ''}">Words</button><button data-m="forms" class="${G.mode === 'forms' ? 'on' : ''}">Forms</button><button data-m="cloze">Reading</button></div><div class="seg" id="srcseg"><button data-s="common" class="${G.source === 'common' ? 'on' : ''}">Common</button><button data-s="saved" class="${G.source === 'saved' ? 'on' : ''}" ${S.favs.length < 4 ? 'disabled title="Save at least 4 words first"' : ''}>Saved</button></div></div><p class="small muted">${G.mode === 'words' ? 'Tap a Latin word, then its meaning.' : 'Tap a form, then the case or tense it belongs to.'}</p><div class="stat" id="gstats"></div><div class="board" id="board"></div>`;
+  function renderMatch(kind) {
+    if (kind === 'saved') G.source = 'saved'; if (kind === 'forms') G.mode = 'forms'; if (kind === 'match') G.mode = 'words';
+    view.innerHTML = `${crumb('Pāria')}<div class="game-top"><h1 style="margin:0">Pāria</h1><div class="seg" id="modeseg"><button data-m="words" class="${G.mode === 'words' ? 'on' : ''}">Words</button><button data-m="forms" class="${G.mode === 'forms' ? 'on' : ''}">Forms</button></div></div><div class="game-top"><p class="small muted" style="margin:0">${G.mode === 'words' ? 'Tap a Latin word, then its meaning.' : 'Tap a form, then the case or tense it belongs to.'}</p>${G.mode === 'words' ? `<div class="seg" id="srcseg"><button data-s="common" class="${G.source === 'common' ? 'on' : ''}">Common</button><button data-s="saved" class="${G.source === 'saved' ? 'on' : ''}" ${S.favs.length < 4 ? 'disabled title="Save at least 4 words first"' : ''}>Saved</button></div>` : ''}</div><div class="stat" id="gstats"></div><div class="board" id="board"></div>`;
     renderStats();
-    $('#modeseg').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; if (b.dataset.m === 'cloze') { location.hash = '#/play/cloze'; return; } G.mode = b.dataset.m; renderPlay(); };
-    $('#srcseg').onclick = ev => { const b = ev.target.closest('button'); if (!b || b.disabled) return; G.source = b.dataset.s; renderPlay(); };
+    $('#modeseg').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; G.mode = b.dataset.m; renderMatch(); };
+    const ss = $('#srcseg'); if (ss) ss.onclick = ev => { const b = ev.target.closest('button'); if (!b || b.disabled) return; G.source = b.dataset.s; renderMatch(); };
     $('#board').onclick = ev => { const b = ev.target.closest('.tilebtn'); if (b && !b.classList.contains('ok')) tileTap(b); };
     newRound();
+  }
+  // ---------------- games hub ----------------
+  const dayIndex = () => Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 86400000);
+  const seeded = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const gstat = () => load('games', {}); const gsave = g => save('games', g);
+  const VERBA_ALL = typeof VERBA !== 'undefined' ? VERBA : [], CORONA_ALL = typeof CORONA !== 'undefined' ? CORONA : [], NEXUS_ALL = typeof NEXUS !== 'undefined' ? NEXUS : [];
+  const GAMES = [
+    ['verbum', 'Verbum', 'Guess the five-letter Latin word in six tries. A new word every day.', 'verbum'],
+    ['nexus', 'Nexus', 'Sixteen words, four hidden groups of four. Find them all.', 'nexus'],
+    ['corona', 'Corōna', 'A ring of letters: make every word you can and fill the crossword.', 'corona'],
+    ['match', 'Pāria', 'Match Latin words with their meanings against the clock.', 'dice'],
+    ['anagram', 'Anagramma', 'Unscramble the letters to make the Latin word for the meaning shown.', 'anagram'],
+    ['hang', 'Pendulus', 'Guess a word one letter at a time before the drawing is finished.', 'hang'],
+    ['cloze', 'Lacūnae', 'Put the missing words back into a passage from the Reader.', 'book'],
+  ];
+  const dayDone = (g, k) => g[k] && g[k].lastDay === dayIndex();
+  function renderGamesHub() {
+    const g = gstat(); const st = load('stats', { rounds: 0, best: 0 });
+    const status = {
+      match: st.rounds ? `${st.rounds} round${st.rounds === 1 ? '' : 's'} · best ${st.best.toFixed(1)}s` : 'Words or forms',
+      verbum: dayDone(g, 'verbum') ? (g.verbum.lastWon ? 'Solved today ✓' : 'Played today') : 'Today’s word is waiting',
+      nexus: dayDone(g, 'nexus') ? (g.nexus.lastWon ? 'Solved today ✓' : 'Played today') : 'Today’s puzzle is waiting',
+      corona: `${Object.keys((g.corona || {}).solved || {}).length} of ${CORONA_ALL.length} rings solved`,
+      anagram: g.anagram && g.anagram.best ? `best ${g.anagram.best} of 10` : 'Ten words a round',
+      hang: g.hang && g.hang.played ? `${g.hang.won || 0} won of ${g.hang.played}` : 'Seven wrong letters allowed',
+      cloze: st.cloze ? `${st.cloze} passage${st.cloze === 1 ? '' : 's'} done` : `${READ.length} passages`,
+    };
+    view.innerHTML = `<h1>Games</h1><p class="small muted">Play with the words. Verbum and Nexus bring a new puzzle every day; the rest are endless.</p><div class="tiles games">${GAMES.map(([id, name, desc, icon]) => `<a class="tile ${id === 'cloze' ? 'wide' : ''}" href="#/play/${id}">${ICONS[icon]}<${id === 'cloze' ? 'div><b' : 'b'}>${name}</b><span>${desc}</span><em class="gchip">${esc(status[id])}</em>${id === 'cloze' ? '</div>' : ''}</a>`).join('')}</div>`;
+  }
+  const crumb = (name) => `<p class="small muted gcrumb"><a href="#/play">Games</a> · ${name}</p>`;
+  function bump(key, f) { const g = gstat(); g[key] = g[key] || {}; f(g[key]); gsave(g); return g[key]; }
+  function keyboardHTML(rows, states) { return `<div class="kb">${rows.map(r => `<div class="kbrow">${r.map(k => `<button data-k="${k}" class="${k === '⏎' || k === '⌫' ? 'wide ' : ''}${states && states[k] ? states[k] : ''}">${k}</button>`).join('')}</div>`).join('')}</div>`; }
+  const KB_ROWS = [['q', 'u', 'e', 'r', 't', 'y', 'i', 'o', 'p'], ['a', 's', 'd', 'f', 'g', 'h', 'k', 'l'], ['⏎', 'z', 'x', 'c', 'b', 'n', 'm', '⌫']];
+  async function wordInfo(nk) { const r = await idxRecord(nk); if (!r) return null; return { nk: r[0], hw: S.settings.macrons ? r[1] : strip(r[1]), gl: r[3].split(/;/)[0].replace(/\(.*?\)/g, '').replace(/\[.*?\]/g, '').split('/').slice(0, 3).map(x => x.trim()).filter(Boolean).join(', ').replace(/\s+/g, ' ').trim().slice(0, 48), pos: r[2].split(',')[0] }; }
+  // ---- Verbum (five letters, six tries) ----
+  const VB = { ans: null, rows: [], cur: '', done: false, daily: true, keys: {} };
+  function verbumStart(daily) {
+    VB.daily = daily; VB.rows = []; VB.cur = ''; VB.done = false; VB.keys = {};
+    const i = daily ? Math.floor(seeded(dayIndex() * 131 + 7)() * VERBA_ALL.length) : Math.floor(Math.random() * VERBA_ALL.length);
+    VB.ans = VERBA_ALL[i];
+    const g = gstat().verbum; if (daily && g && g.lastDay === dayIndex() && g.rows) { VB.rows = g.rows; VB.done = g.done; for (const r of VB.rows) verbumKeyStates(r); }
+    verbumDraw();
+  }
+  function verbumScore(guess) { const a = VB.ans[0].split(''), s = Array(5).fill('x'); const left = []; for (let i = 0; i < 5; i++) { if (guess[i] === a[i]) s[i] = 'g'; else left.push(a[i]); } for (let i = 0; i < 5; i++) { if (s[i] === 'g') continue; const j = left.indexOf(guess[i]); if (j >= 0) { s[i] = 'y'; left.splice(j, 1); } } return s.join(''); }
+  function verbumKeyStates(row) { const sc = verbumScore(row); for (let i = 0; i < 5; i++) { const k = row[i], v = sc[i]; const cur = VB.keys[k]; if (v === 'g' || (v === 'y' && cur !== 'g') || (!cur)) VB.keys[k] = v; } }
+  function verbumDraw() {
+    const g = gstat().verbum || {};
+    let grid = '';
+    for (let r = 0; r < 6; r++) {
+      const row = VB.rows[r]; const sc = row ? verbumScore(row) : null; const typing = !row && r === VB.rows.length && !VB.done ? VB.cur : '';
+      grid += `<div class="vrow ${row ? 'filled' : ''}">${[0, 1, 2, 3, 4].map(i => `<div class="vcell ${sc ? sc[i] : (typing[i] ? 'typed' : '')}" style="--d:${i * 70}ms">${row ? row[i] : (typing[i] || '')}</div>`).join('')}</div>`;
+    }
+    const stats = `<div class="stat"><div><b>${g.played || 0}</b><span>played</span></div><div><b>${g.played ? Math.round(100 * (g.won || 0) / g.played) : 0}%</b><span>won</span></div><div><b>${g.streak || 0}</b><span>streak</span></div><div><b>${g.maxStreak || 0}</b><span>best streak</span></div></div>`;
+    let end = '';
+    if (VB.done) {
+      const won = VB.rows[VB.rows.length - 1] === VB.ans[0];
+      end = `<div class="card done gend"><div class="big la">${esc(VB.ans[1])}</div><p>${esc(VB.ans[2])}</p><p class="small muted">${won ? `Solved in ${VB.rows.length} ${VB.rows.length === 1 ? 'try' : 'tries'}.` : 'Not this time.'}</p><p><a class="btn primary" href="#/w/${encodeURIComponent(norm(VB.ans[1]))}">Open entry</a> <button class="btn" id="vshare">Share</button> ${VB.daily ? '<button class="btn" id="vrandom">Play a random word</button>' : '<button class="btn" id="vrandom">Another word</button>'}</p></div>`;
+    }
+    view.innerHTML = `${crumb('Verbum')}<div class="game-top"><h1 style="margin:0">Verbum</h1><div class="seg" id="vseg"><button data-d="1" class="${VB.daily ? 'on' : ''}">Daily</button><button data-d="0" class="${VB.daily ? '' : 'on'}">Random</button></div></div><p class="small muted">A five-letter Latin dictionary word. Any Latin form of five letters counts as a guess. Write u for both u and v, and i for j.</p><div class="vgrid" id="vgrid">${grid}</div>${end}${keyboardHTML(KB_ROWS, VB.keys)}${stats}`;
+    $('#vseg').onclick = ev => { const b = ev.target.closest('button'); if (b) verbumStart(b.dataset.d === '1'); };
+    view.querySelector('.kb').onclick = ev => { const b = ev.target.closest('button'); if (b) verbumKey(b.dataset.k); };
+    const sh = $('#vshare'); if (sh) sh.onclick = () => { const txt = `Verbum ${VB.daily ? 'diēī ' + new Date().toISOString().slice(0, 10) : ''} ${VB.rows[VB.rows.length - 1] === VB.ans[0] ? VB.rows.length : 'X'}/6\n` + VB.rows.map(r => verbumScore(r).replace(/g/g, '🟩').replace(/y/g, '🟨').replace(/x/g, '⬜')).join('\n') + '\nlexicon latinum'; if (navigator.share) navigator.share({ text: txt }).catch(() => {}); else if (navigator.clipboard) { navigator.clipboard.writeText(txt); toast('Copied'); } };
+    const rn = $('#vrandom'); if (rn) rn.onclick = () => verbumStart(false);
+  }
+  async function verbumKey(k) {
+    if (VB.done) return;
+    if (k === '⌫') { VB.cur = VB.cur.slice(0, -1); verbumDraw(); return; }
+    if (k === '⏎') {
+      if (VB.cur.length < 5) { shakeRow(); toast('Five letters'); return; }
+      const w = VB.cur; const ok = VERBA_ALL.some(x => x[0] === w) || await (async () => { const arr = await idx(w[0]); if (arr.some(r => r[0] === w)) return true; const wi = await wwIndex(w[0]); return Morph.analyze(w, wi).length > 0; })();
+      if (!ok) { shakeRow(); toast('Not a Latin form I know'); return; }
+      VB.rows.push(w); VB.cur = ''; verbumKeyStates(w);
+      if (w === VB.ans[0] || VB.rows.length === 6) {
+        VB.done = true; const won = w === VB.ans[0];
+        if (VB.daily) bump('verbum', s => { const d = dayIndex(); s.played = (s.played || 0) + 1; if (won) { s.won = (s.won || 0) + 1; s.streak = s.lastDay === d - 1 ? (s.streak || 0) + 1 : 1; s.maxStreak = Math.max(s.maxStreak || 0, s.streak); } else s.streak = 0; s.lastDay = d; s.lastWon = won; s.rows = VB.rows; s.done = true; s.dist = s.dist || {}; if (won) s.dist[VB.rows.length] = (s.dist[VB.rows.length] || 0) + 1; });
+        if (won && navigator.vibrate) navigator.vibrate([10, 40, 10]);
+      } else if (VB.daily) bump('verbum', s => { s.lastDay = dayIndex(); s.rows = VB.rows; s.done = false; });
+      verbumDraw(); return;
+    }
+    if (/^[a-z]$/.test(k) && VB.cur.length < 5) { VB.cur += k === 'v' ? 'u' : k === 'j' ? 'i' : k; verbumDraw(); }
+  }
+  function shakeRow() { const r = view.querySelectorAll('.vrow')[VB.rows.length]; if (r) { r.classList.remove('shake'); void r.offsetWidth; r.classList.add('shake'); } }
+  document.addEventListener('keydown', ev => { if (!$('#vgrid') || ev.metaKey || ev.ctrlKey) return; const k = ev.key.toLowerCase(); if (k === 'enter') verbumKey('⏎'); else if (k === 'backspace') verbumKey('⌫'); else if (/^[a-z]$/.test(k)) verbumKey(k); });
+  // ---- Nexus (four groups of four) ----
+  const NX = { p: null, i: 0, daily: true, sel: [], solved: [], mistakes: 0, order: [], over: false };
+  function nexusStart(daily, idx) {
+    NX.daily = daily; NX.i = daily ? dayIndex() % NEXUS_ALL.length : (idx != null ? idx : Math.floor(Math.random() * NEXUS_ALL.length)); NX.p = NEXUS_ALL[NX.i];
+    NX.sel = []; NX.solved = []; NX.mistakes = 0; NX.over = false;
+    NX.order = shuffle(NX.p.groups.flatMap((g, gi) => g[2].map(w => ({ w, gi }))));
+    const g = gstat().nexus; if (daily && g && g.lastDay === dayIndex() && g.state) { NX.solved = g.state.solved; NX.mistakes = g.state.mistakes; NX.over = g.state.over; }
+    nexusDraw();
+  }
+  function nexusDraw() {
+    const p = NX.p; const left = NX.order.filter(x => !NX.solved.includes(x.gi));
+    let html = `${crumb('Nexus')}<div class="game-top"><h1 style="margin:0">Nexus</h1><div class="seg" id="nseg"><button data-d="1" class="${NX.daily ? 'on' : ''}">Daily</button><button data-d="0" class="${NX.daily ? '' : 'on'}">Random</button></div></div><p class="small muted">Select four words that belong together, then press Submit. Four groups, four mistakes allowed.</p>`;
+    html += `<div class="nxsolved">${NX.solved.map(gi => `<div class="nxgroup l${p.groups[gi][1]}"><b>${esc(p.groups[gi][0])}</b><span class="la">${p.groups[gi][2].map(esc).join(', ')}</span></div>`).join('')}</div>`;
+    if (!NX.over) {
+      html += `<div class="nxgrid">${left.map(x => `<button class="nxw la ${NX.sel.includes(x.w) ? 'sel' : ''}" data-w="${esc(x.w)}">${esc(x.w)}</button>`).join('')}</div>`;
+      html += `<p class="small muted nxlives">Mistakes left: ${'●'.repeat(4 - NX.mistakes)}${'○'.repeat(NX.mistakes)}</p><p class="nxbtns"><button class="btn" id="nxshuf">Shuffle</button><button class="btn" id="nxclear">Deselect</button><button class="btn primary" id="nxsub" ${NX.sel.length === 4 ? '' : 'disabled'}>Submit</button></p>`;
+    } else {
+      const won = NX.solved.length === 4; const g = gstat().nexus || {};
+      html += `<div class="card done gend"><div class="big">${won ? (NX.mistakes === 0 ? 'Perfect!' : 'Solved') : 'Next time'}</div><p class="small muted">${won ? `${NX.mistakes} mistake${NX.mistakes === 1 ? '' : 's'}.` : 'The groups are shown above.'}</p><p><button class="btn primary" id="nxanother">${NX.daily ? 'Play a random puzzle' : 'Another puzzle'}</button></p></div><div class="stat"><div><b>${g.played || 0}</b><span>played</span></div><div><b>${g.won || 0}</b><span>solved</span></div><div><b>${g.perfect || 0}</b><span>perfect</span></div><div><b>${g.streak || 0}</b><span>streak</span></div></div>`;
+    }
+    view.innerHTML = html;
+    $('#nseg').onclick = ev => { const b = ev.target.closest('button'); if (b) nexusStart(b.dataset.d === '1'); };
+    const grid = view.querySelector('.nxgrid'); if (grid) grid.onclick = ev => { const b = ev.target.closest('.nxw'); if (!b) return; const w = b.dataset.w; if (NX.sel.includes(w)) NX.sel = NX.sel.filter(x => x !== w); else if (NX.sel.length < 4) NX.sel.push(w); b.classList.toggle('sel', NX.sel.includes(w)); $('#nxsub').disabled = NX.sel.length !== 4; };
+    const sh = $('#nxshuf'); if (sh) sh.onclick = () => { shuffle(NX.order); nexusDraw(); };
+    const cl = $('#nxclear'); if (cl) cl.onclick = () => { NX.sel = []; nexusDraw(); };
+    const sb = $('#nxsub'); if (sb) sb.onclick = nexusSubmit;
+    const an = $('#nxanother'); if (an) an.onclick = () => nexusStart(false);
+  }
+  function nexusSave(done, won) {
+    bump('nexus', s => {
+      const d = dayIndex();
+      if (NX.daily) { s.lastDay = d; s.state = { solved: NX.solved, mistakes: NX.mistakes, over: NX.over }; }
+      if (done && (!NX.daily || s.countedDay !== d)) {
+        s.played = (s.played || 0) + 1;
+        if (won) { s.won = (s.won || 0) + 1; if (NX.mistakes === 0) s.perfect = (s.perfect || 0) + 1; }
+        if (NX.daily) { s.streak = won ? (s.prevWinDay === d - 1 ? (s.streak || 0) + 1 : 1) : 0; if (won) s.prevWinDay = d; s.countedDay = d; s.lastWon = won; }
+      }
+    });
+  }
+  function nexusSubmit() {
+    if (NX.sel.length !== 4) return;
+    const gis = NX.sel.map(w => NX.order.find(x => x.w === w).gi); const counts = {}; for (const gi of gis) counts[gi] = (counts[gi] || 0) + 1;
+    const best = Math.max(...Object.values(counts));
+    if (best === 4) { NX.solved.push(gis[0]); NX.sel = []; if (navigator.vibrate) navigator.vibrate(12); if (NX.solved.length === 4) { NX.over = true; nexusSave(true, true); } else nexusSave(false); nexusDraw(); return; }
+    NX.mistakes++; view.querySelectorAll('.nxw.sel').forEach(b => { b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); });
+    toast(best === 3 ? 'One away…' : 'Not a group');
+    if (NX.mistakes >= 4) { NX.over = true; for (let gi = 0; gi < 4; gi++) if (!NX.solved.includes(gi)) NX.solved.push(gi); nexusSave(true, false); setTimeout(nexusDraw, 500); return; }
+    nexusSave(false); setTimeout(() => { $('.nxlives') && ($('.nxlives').textContent = `Mistakes left: ${'●'.repeat(4 - NX.mistakes)}${'○'.repeat(NX.mistakes)}`); }, 0);
+  }
+  // ---- Corona (letter ring crossword) ----
+  const CR = { i: 0, p: null, found: new Set(), bonus: new Set(), cur: [], letters: [], drag: false, revealed: new Set() };
+  function coronaStart(i) {
+    const g = gstat().corona || { solved: {} };
+    if (i == null) { i = 0; while (i < CORONA_ALL.length - 1 && g.solved[i]) i++; }
+    CR.i = Math.max(0, Math.min(CORONA_ALL.length - 1, i)); CR.p = CORONA_ALL[CR.i]; CR.found = new Set(); CR.bonus = new Set(); CR.cur = []; CR.letters = CR.p.letters.split(''); CR.revealed = new Set();
+    const prog = (g.progress || {})[CR.i]; if (prog) { CR.found = new Set(prog.f); CR.bonus = new Set(prog.b || []); CR.revealed = new Set(prog.r || []); }
+    coronaDraw();
+  }
+  function coronaSave() { bump('corona', s => { s.solved = s.solved || {}; s.progress = s.progress || {}; s.progress[CR.i] = { f: [...CR.found], b: [...CR.bonus], r: [...CR.revealed] }; if (CR.p.grid.every(w => CR.found.has(w.w))) s.solved[CR.i] = true; }); }
+  function coronaDraw() {
+    const p = CR.p; const g = gstat().corona || { solved: {} }; const done = p.grid.every(w => CR.found.has(w.w));
+    const cells = new Map(); for (const w of p.grid) for (let k = 0; k < w.w.length; k++) { const x = w.d ? w.x : w.x + k, y = w.d ? w.y + k : w.y; const key = x + ',' + y; const c = cells.get(key) || { ch: w.w[k], on: false }; if (CR.found.has(w.w) || CR.revealed.has(key)) c.on = true; cells.set(key, c); }
+    let grid = `<div class="cwgrid" style="grid-template-columns:repeat(${p.w},1fr);--cols:${p.w}">`;
+    for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) { const c = cells.get(x + ',' + y); grid += c ? `<div class="cwc ${c.on ? 'on' : ''}">${c.on ? c.ch : ''}</div>` : '<div class="cwe"></div>'; }
+    grid += '</div>';
+    const n = CR.letters.length; const R = 92;
+    const ring = `<div class="ring" id="ring">${CR.letters.map((ch, k) => { const a = -Math.PI / 2 + k * 2 * Math.PI / n; return `<button class="rl ${CR.cur.includes(k) ? 'on' : ''}" data-k="${k}" style="left:${(50 + 50 * Math.cos(a) * R / 110).toFixed(1)}%;top:${(50 + 50 * Math.sin(a) * R / 110).toFixed(1)}%">${ch}</button>`; }).join('')}<div class="ringc">${done ? '✓' : ''}</div></div>`;
+    const foundList = [...CR.found, ...CR.bonus].sort().map(w => `<span class="chip la" title="${esc((p.dict[w] || [])[1] || '')}"><b>${esc(w)}</b> ${esc((p.dict[w] || [])[1] || '')}</span>`).join('');
+    view.innerHTML = `${crumb('Corōna')}<div class="game-top"><h1 style="margin:0">Corōna <span class="muted small">${CR.i + 1} / ${CORONA_ALL.length}</span></h1><div class="seg"><button id="crprev" ${CR.i === 0 ? 'disabled' : ''}>‹</button><button id="crnext" ${CR.i >= CORONA_ALL.length - 1 ? 'disabled' : ''}>›</button></div></div><p class="small muted">Join the letters into Latin words (dictionary forms or inflected ones). Fill every word in the grid; extra words count as bonus.</p>${grid}<div class="crword la" id="crword">${CR.cur.map(k => CR.letters[k]).join('') || '&nbsp;'}</div>${ring}<p class="crbtns"><button class="btn" id="crshuf">Shuffle</button><button class="btn" id="crdel">Delete</button><button class="btn" id="crhint">Hint</button><button class="btn primary" id="crenter">Enter</button></p><p class="small muted">${p.grid.filter(w => CR.found.has(w.w)).length} of ${p.grid.length} in the grid${CR.bonus.size ? ` · ${CR.bonus.size} bonus` : ''} · ${Object.keys(g.solved || {}).length} rings solved</p>${done ? `<div class="card done gend"><div class="big">Corōna complēta!</div><p><button class="btn primary" id="crgo">Next ring</button></p></div>` : ''}<div class="crfound">${foundList}</div>`;
+    $('#crprev').onclick = () => coronaStart(CR.i - 1); $('#crnext').onclick = () => coronaStart(CR.i + 1);
+    const go = $('#crgo'); if (go) go.onclick = () => coronaStart(CR.i + 1);
+    $('#crshuf').onclick = () => { CR.letters = shuffle(CR.letters.slice()); CR.cur = []; coronaDraw(); };
+    $('#crdel').onclick = () => { CR.cur.pop(); coronaWord(); };
+    $('#crenter').onclick = coronaSubmit;
+    $('#crhint').onclick = () => { const hidden = [...cells.entries()].filter(([k, c]) => !c.on); if (!hidden.length) return; const [k] = hidden[Math.floor(Math.random() * hidden.length)]; CR.revealed.add(k); coronaSave(); coronaDraw(); };
+    const ring_ = $('#ring');
+    const pick = el => { const b = el && el.closest && el.closest('.rl'); if (!b) return; const k = +b.dataset.k; if (CR.cur.includes(k)) { if (CR.cur[CR.cur.length - 2] === k) { CR.cur.pop(); coronaWord(); } return; } CR.cur.push(k); b.classList.add('on'); coronaWord(); };
+    ring_.addEventListener('pointerdown', ev => { const b = ev.target.closest('.rl'); if (!b) return; ev.preventDefault(); CR.drag = true; CR.tapped = +b.dataset.k; ring_.setPointerCapture(ev.pointerId); pick(b); });
+    ring_.addEventListener('pointermove', ev => { if (!CR.drag) return; const el = document.elementFromPoint(ev.clientX, ev.clientY); if (el && el.closest('.rl') && +el.closest('.rl').dataset.k !== CR.tapped) { CR.moved = true; pick(el); } });
+    const up = ev => { if (!CR.drag) return; CR.drag = false; if (CR.moved) coronaSubmit(); CR.moved = false; };
+    ring_.addEventListener('pointerup', up); ring_.addEventListener('pointercancel', up);
+  }
+  function coronaWord() { const el = $('#crword'); if (el) el.innerHTML = CR.cur.map(k => CR.letters[k]).join('') || '&nbsp;'; view.querySelectorAll('.rl').forEach(b => b.classList.toggle('on', CR.cur.includes(+b.dataset.k))); }
+  function coronaSubmit() {
+    const w = CR.cur.map(k => CR.letters[k]).join(''); CR.cur = []; if (w.length < 3) { coronaWord(); return; }
+    const p = CR.p; const inGrid = p.grid.some(x => x.w === w);
+    if (CR.found.has(w) || CR.bonus.has(w)) { toast('Already found'); coronaWord(); return; }
+    if (inGrid) { CR.found.add(w); if (navigator.vibrate) navigator.vibrate(10); coronaSave(); coronaDraw(); if (p.grid.every(x => CR.found.has(x.w))) { toast('Corōna complēta!'); } return; }
+    if (p.bonus.includes(w)) { CR.bonus.add(w); toast(`Bonus: ${w} — ${(p.dict[w] || [])[1] || ''}`); coronaSave(); coronaDraw(); return; }
+    const el = $('#crword'); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); setTimeout(coronaWord, 350);
+  }
+  // ---- Anagramma ----
+  const AN = { list: [], i: 0, score: 0, cur: [], tiles: [] };
+  async function anagramStart() {
+    view.innerHTML = `${crumb('Anagramma')}<h1>Anagramma</h1><div class="skel"></div>`;
+    await Data.ready; AN.list = []; AN.i = 0; AN.score = 0;
+    for (const w of shuffle(WOTD.slice())) { const info = await wordInfo(norm(w)); if (!info || info.nk.length < 4 || info.nk.length > 9 || /[^a-z]/.test(info.nk)) continue; if (AN.list.some(x => x.nk === info.nk)) continue; AN.list.push(info); if (AN.list.length === 10) break; }
+    anagramNext();
+  }
+  function anagramNext() {
+    const w = AN.list[AN.i]; if (!w) { const best = bump('anagram', s => { s.played = (s.played || 0) + 1; s.best = Math.max(s.best || 0, AN.score); }).best; view.innerHTML = `${crumb('Anagramma')}<h1>Anagramma</h1><div class="card done gend"><div class="big">${AN.score} / 10</div><p class="small muted">best ${best} of 10</p><p><button class="btn primary" id="anagain">Another round</button></p><p class="similar">${AN.list.map(x => `<a href="#/w/${encodeURIComponent(x.nk)}"><span class="la">${esc(x.hw)}</span><span class="gl">${esc(x.gl)}</span></a>`).join('')}</p></div>`; $('#anagain').onclick = anagramStart; return; }
+    AN.cur = []; let tiles = w.nk.split(''); let tries = 0; do { tiles = shuffle(tiles.slice()); } while (tiles.join('') === w.nk && tries++ < 10); AN.tiles = tiles;
+    view.innerHTML = `${crumb('Anagramma')}<div class="game-top"><h1 style="margin:0">Anagramma</h1><span class="muted small">${AN.i + 1} / 10 · ${AN.score} right</span></div><p class="small muted">Tap the letters in order to spell the Latin word that means:</p><p class="anhint">${esc(w.gl)} <span class="muted small">(${esc(CORE.pos[w.pos] || w.pos.toLowerCase())})</span></p><div class="anslots" id="anslots">${w.nk.split('').map(() => `<span></span>`).join('')}</div><div class="antiles" id="antiles">${tiles.map((ch, k) => `<button class="la" data-k="${k}">${ch}</button>`).join('')}</div><p class="crbtns"><button class="btn" id="anclear">Clear</button><button class="btn" id="anskip">Skip</button></p>`;
+    const draw = () => { const slots = view.querySelectorAll('#anslots span'); slots.forEach((s, i) => { s.textContent = AN.cur[i] != null ? AN.tiles[AN.cur[i]] : ''; }); view.querySelectorAll('#antiles button').forEach(b => b.classList.toggle('used', AN.cur.includes(+b.dataset.k))); };
+    $('#antiles').onclick = ev => { const b = ev.target.closest('button'); if (!b || AN.cur.includes(+b.dataset.k)) return; AN.cur.push(+b.dataset.k); draw(); if (AN.cur.length === w.nk.length) { const got = AN.cur.map(k => AN.tiles[k]).join(''); const sl = $('#anslots'); if (got === w.nk) { sl.classList.add('ok'); AN.score++; if (navigator.vibrate) navigator.vibrate(10); AN.i++; setTimeout(anagramNext, 600); } else { sl.classList.add('shake'); setTimeout(() => { sl.classList.remove('shake'); AN.cur = []; draw(); }, 400); } } };
+    $('#anclear').onclick = () => { AN.cur = []; draw(); };
+    $('#anskip').onclick = () => { const sl = $('#anslots'); sl.querySelectorAll('span').forEach((s, i) => s.textContent = w.nk[i]); sl.classList.add('bad'); AN.i++; setTimeout(anagramNext, 900); };
+  }
+  // ---- Pendulus (hangman) ----
+  const HG = { w: null, guessed: new Set(), wrong: 0 };
+  const HANG_PARTS = ['<line x1="10" y1="110" x2="90" y2="110"/>', '<line x1="30" y1="110" x2="30" y2="10"/>', '<line x1="30" y1="10" x2="75" y2="10"/>', '<line x1="75" y1="10" x2="75" y2="25"/>', '<circle cx="75" cy="35" r="10"/>', '<line x1="75" y1="45" x2="75" y2="75"/>', '<path d="M75 52l-14 14M75 52l14 14"/>', '<path d="M75 75l-12 20M75 75l12 20"/>'];
+  async function hangStart() {
+    view.innerHTML = `${crumb('Pendulus')}<h1>Pendulus</h1><div class="skel"></div>`; await Data.ready;
+    let info = null; for (const w of shuffle(WOTD.slice())) { info = await wordInfo(norm(w)); if (info && info.nk.length >= 4 && !/[^a-z]/.test(info.nk)) break; info = null; }
+    HG.w = info; HG.guessed = new Set(); HG.wrong = 0; hangDraw();
+  }
+  function hangDraw() {
+    const w = HG.w; const letters = w.nk.split(''); const lost = HG.wrong >= 8; const won = letters.every(ch => HG.guessed.has(ch)); const over = lost || won;
+    const states = {}; for (const k of HG.guessed) states[k] = letters.includes(k) ? 'g' : 'x';
+    const g = gstat().hang || {};
+    view.innerHTML = `${crumb('Pendulus')}<div class="game-top"><h1 style="margin:0">Pendulus</h1><span class="muted small">${8 - HG.wrong} left</span></div><div class="hang"><svg viewBox="0 0 110 120" class="gallows">${HANG_PARTS.slice(0, HG.wrong).join('')}</svg><div><p class="small muted">A ${esc(CORE.pos[w.pos] || w.pos.toLowerCase())} meaning</p><p class="anhint">${esc(w.gl)}</p><div class="hword la">${letters.map(ch => `<span class="${HG.guessed.has(ch) ? 'on' : lost ? 'miss' : ''}">${HG.guessed.has(ch) || lost ? ch : ''}</span>`).join('')}</div></div></div>${over ? `<div class="card done gend"><div class="big la">${esc(w.hw)}</div><p class="small muted">${won ? `Saved, with ${HG.wrong} wrong letter${HG.wrong === 1 ? '' : 's'}.` : 'Too late.'}</p><p><a class="btn" href="#/w/${encodeURIComponent(w.nk)}">Open entry</a> <button class="btn primary" id="hgagain">Another word</button></p></div><div class="stat"><div><b>${g.played || 0}</b><span>played</span></div><div><b>${g.won || 0}</b><span>won</span></div><div><b>${g.streak || 0}</b><span>streak</span></div></div>` : keyboardHTML([['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'], ['k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's'], ['t', 'u', 'x', 'y', 'z']], states)}`;
+    const kb = view.querySelector('.kb'); if (kb) kb.onclick = ev => { const b = ev.target.closest('button'); if (!b || HG.guessed.has(b.dataset.k)) return; const k = b.dataset.k; HG.guessed.add(k); if (!letters.includes(k)) HG.wrong++; const nowWon = letters.every(ch => HG.guessed.has(ch)), nowLost = HG.wrong >= 8; if (nowWon || nowLost) bump('hang', s => { s.played = (s.played || 0) + 1; if (nowWon) { s.won = (s.won || 0) + 1; s.streak = (s.streak || 0) + 1; } else s.streak = 0; }); if (nowWon && navigator.vibrate) navigator.vibrate([10, 40, 10]); hangDraw(); };
+    const ag = $('#hgagain'); if (ag) ag.onclick = hangStart;
+  }
+  function renderPlay(arg) {
+    const [game, sub] = (arg || '').split('/');
+    if (game === 'cloze') return renderCloze(sub);
+    if (game === 'match' || game === 'forms' || game === 'saved') return renderMatch(game);
+    if (game === 'verbum') return verbumStart(sub !== 'r');
+    if (game === 'nexus') return nexusStart(sub !== 'r');
+    if (game === 'corona') return coronaStart(sub ? +sub - 1 : null);
+    if (game === 'anagram') return anagramStart();
+    if (game === 'hang') return hangStart();
+    renderGamesHub();
   }
   // ---------------- grammar ----------------
   const GRAM = typeof GRAMMAR !== 'undefined' ? GRAMMAR : [];

@@ -369,3 +369,64 @@ table.para tr{transition:background .2s}
 #pop .pgr b{color:var(--accent2);font-weight:600}
 #pop .palt{display:block;margin-top:3px}
 @media (prefers-reduced-motion:reduce){#pop{animation:none}#pop .pgr{transition:none}}
+
+/* ---- games ---- */
+.tiles.games .tile{min-height:0}
+.gchip{font-style:normal;font-size:.72rem;background:var(--chip);border-radius:999px;padding:2px 8px;color:var(--fg);align-self:flex-start;margin-top:auto}
+.gcrumb{margin:4px 0 2px}
+.gend{margin:12px 0}
+.board{position:relative}
+.board.covered .col{filter:blur(6px);pointer-events:none;opacity:.6}
+.veil{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:2}
+.veil .btn{font-size:1.1rem;padding:12px 32px}
+.kb{display:flex;flex-direction:column;gap:6px;margin:12px 0;user-select:none;-webkit-user-select:none}
+.kbrow{display:flex;justify-content:center;gap:5px}
+.kb button{flex:1;max-width:40px;height:46px;border-radius:8px;border:0;background:var(--chip);color:var(--fg);font-weight:600;font-size:.95rem;text-transform:uppercase;padding:0;transition:background .2s,color .2s}
+.kb button.wide{max-width:60px;flex:1.6;font-size:.8rem}
+.kb button.g{background:#5aa25f;color:#fff}.kb button.y{background:#d6a93b;color:#fff}.kb button.x{background:var(--line);color:var(--muted)}
+.vgrid{display:flex;flex-direction:column;gap:6px;margin:12px auto;max-width:330px}
+.vrow{display:flex;gap:6px;justify-content:center}
+.vrow.shake{animation:shake .35s}
+.vcell{flex:1;aspect-ratio:1;max-width:60px;border:2px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.7rem;font-weight:600;text-transform:uppercase;color:var(--fg);background:var(--bg2)}
+.vcell.typed{border-color:var(--muted);animation:popin .12s}
+.vrow.filled .vcell{animation:flip .5s both;animation-delay:var(--d)}
+.vcell.g{background:#5aa25f;border-color:#5aa25f;color:#fff}.vcell.y{background:#d6a93b;border-color:#d6a93b;color:#fff}.vcell.x{background:var(--line);border-color:var(--line);color:var(--muted)}
+@keyframes flip{0%{transform:rotateX(0);background:var(--bg2);color:var(--fg)}49%{transform:rotateX(90deg);background:var(--bg2);color:var(--fg)}51%{transform:rotateX(90deg)}100%{transform:rotateX(0)}}
+.nxgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:10px 0}
+.nxw{border:1.5px solid var(--line);background:var(--bg2);border-radius:10px;min-height:62px;padding:6px 3px;font-size:.95rem;color:var(--fg);box-shadow:var(--shadow);overflow-wrap:anywhere;line-height:1.15;transition:transform .12s,background .2s}
+.nxw.sel{background:var(--fg);color:var(--bg2);border-color:var(--fg);transform:scale(1.03)}
+.nxw.shake{animation:shake .35s}
+.nxsolved{display:flex;flex-direction:column;gap:7px;margin:10px 0}
+.nxgroup{border-radius:10px;padding:10px 12px;text-align:center;display:flex;flex-direction:column;gap:2px;animation:cardin .4s both;color:#1a1a1a}
+.nxgroup b{font-size:.95rem;letter-spacing:.02em}.nxgroup span{font-size:.92rem}
+.nxgroup.l0{background:#f3d86a}.nxgroup.l1{background:#9ed07c}.nxgroup.l2{background:#9fc4e8}.nxgroup.l3{background:#c9a3e2}
+.nxbtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.nxlives{text-align:center;letter-spacing:.1em}
+.cwgrid{display:grid;gap:3px;margin:12px auto;max-width:calc(var(--cols) * 38px)}
+.cwc{aspect-ratio:1;border:1.5px solid var(--line);border-radius:6px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.15rem;font-weight:600;text-transform:uppercase;color:var(--fg)}
+.cwc.on{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);animation:popin .25s}
+.cwe{aspect-ratio:1}
+.crword{text-align:center;font-size:1.6rem;min-height:2.2rem;letter-spacing:.08em;text-transform:uppercase;margin:4px 0}
+.crword.shake{animation:shake .35s}
+.ring{position:relative;width:230px;height:230px;margin:6px auto;border-radius:50%;background:var(--chip);touch-action:none;user-select:none;-webkit-user-select:none}
+.rl{position:absolute;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;border:2px solid var(--line);background:var(--bg2);color:var(--fg);font-family:var(--serif);font-size:1.55rem;font-weight:600;text-transform:uppercase;box-shadow:var(--shadow);transition:transform .12s,background .15s}
+.rl.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);transform:scale(1.08)}
+.ringc{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:1.6rem;color:var(--accent)}
+.crbtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.crfound{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.crfound .chip b{text-transform:none}
+.anhint{font-size:1.25rem;margin:4px 0 10px}
+.anslots{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+.anslots span{width:38px;height:46px;border-bottom:3px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.5rem;text-transform:uppercase}
+.anslots.ok span{border-color:#5aa25f;color:#5aa25f}.anslots.bad span{color:var(--muted)}.anslots.shake{animation:shake .35s}
+.antiles{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+.antiles button{width:46px;height:50px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg2);color:var(--fg);font-size:1.4rem;text-transform:uppercase;box-shadow:var(--shadow)}
+.antiles button.used{opacity:.25;pointer-events:none}
+.hang{display:flex;gap:16px;align-items:flex-start;margin:10px 0}
+.hang>div{min-width:0;overflow-wrap:anywhere}
+.tiles.games .tile.wide .gchip{margin-top:6px}
+.gallows{width:110px;flex:0 0 110px;stroke:var(--fg);stroke-width:3;fill:none;stroke-linecap:round}
+.hword{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.hword span{width:30px;height:38px;border-bottom:3px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:1.4rem;text-transform:uppercase}
+.hword span.on{border-color:var(--accent)}.hword span.miss{color:#c33}
+:root[data-skin="rustic"] .nxgroup.l0{background:#e8d08a}:root[data-skin="rustic"] .nxgroup.l1{background:#b9c98a}:root[data-skin="rustic"] .nxgroup.l2{background:#a9bfc9}:root[data-skin="rustic"] .nxgroup.l3{background:#c9aab8}
