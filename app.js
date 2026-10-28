@@ -1,7 +1,7 @@
 /* Lexicon Latinum — app logic */
 (function () {
   'use strict';
-  const APP_BUILD = '2026-10-28.0255';
+  const APP_BUILD = '2026-10-28.0316';
   const $ = s => document.querySelector(s);
   const view = $('#view');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -436,9 +436,9 @@
     if (favs.length) html += `<div class="section-title">My lexicon <a class="small" href="#/saved" style="font-weight:400;text-transform:none;letter-spacing:0;margin-left:8px">all ${S.favs.length} ›</a></div><div class="hscroll">${favs.map(mini).join('')}</div>`;
     html += `<div class="section-title">Grammar</div><div class="tiles">${Object.entries(GROUP_INFO).map(([g, [ic, d, short]]) => `<a class="tile" href="#/gg/${encodeURIComponent(g)}">${ICONS[ic]}<b>${esc(short)}</b><span>${esc(d)}</span></a>`).join('')}</div>`;
     const rd = load('read', { done: [], last: null }); const lastP = rd.last && READ.find(x => x.id === rd.last);
-    html += `<a class="tile wide" href="#/r${lastP ? '/' + lastP.id : ''}">${ICONS.book}<div><b>${lastP ? 'Continue reading' : 'Reader'}</b><span>${lastP ? esc(lastP.title + ' · ' + lastP.author) : 'Graded passages from the Vulgate to Virgil, every word tappable'}${rd.done.length ? ` · ${rd.done.length}/${READ.length} read` : ''}</span></div></a>`;
+    html += `<a class="tile wide" href="#/r${lastP ? '/' + lastP.id : ''}">${ICONS.book}<div><b>${lastP ? 'Continue reading' : 'Reader'}</b><span>${lastP ? esc(lastP.title) + ' <i>· ' + esc(lastP.author) + '</i>' : 'Graded passages from the Vulgate to Virgil, every word tappable'}</span>${rd.done.length ? `<div class="meta2"><em>${rd.done.length} of ${READ.length} read</em></div>` : ''}</div></a>`;
     const st = load('stats', { rounds: 0, best: 0 });
-    html += `<a class="tile wide" href="#/play">${ICONS.dice}<div><b>Practice</b><span>Match Latin and English, or forms and their names${st.rounds ? ` · ${st.rounds} round${st.rounds === 1 ? '' : 's'} played` : ''}</span></div></a>`;
+    html += `<a class="tile wide" href="#/play">${ICONS.dice}<div><b>Practice</b><span>Match words, name forms, fill the blanks</span>${st.rounds ? `<div class="meta2"><em>${st.rounds} round${st.rounds === 1 ? '' : 's'} played</em>${st.best ? `<em>best ${st.best.toFixed(1)}s</em>` : ''}</div>` : ''}</div></a>`;
     html += `<div class="card tip"><div class="k">Tip</div>${esc(tip)}</div>`;
     html += `<footer class="credits">Definitions: <b>A Latin Dictionary</b> by Charlton T. Lewis &amp; Charles Short (1879), digitised by the Perseus Digital Library (CC BY-SA 4.0). Stems, inflections and short glosses: <b>Whitaker's Words</b> (public domain). ${Data.meta ? `${Data.meta.headwords.toLocaleString()} headwords · ${Data.meta.ls.toLocaleString()} Lewis &amp; Short entries · ${Data.meta.ww.toLocaleString()} Whitaker entries.` : ''}</footer>`;
     view.innerHTML = html;
@@ -492,8 +492,8 @@
     if (btn) btn.textContent = 'Done';
     toast('All data downloaded for offline use');
   }
-  const SKINS = [['candida', 'Candida', 'Plain white'], ['illustrata', 'Per Sē', 'Orange and white, in the manner of a well-known Latin course'], ['rustic', 'Rūstica', 'Parchment, a handwritten title, sketched icons'], ['navy', 'Nox', 'Deep blue night with neon mint'], ['peach', 'Persica', 'Soft apricot and terracotta'], ['blush', 'Rosea', 'Rose pink'], ['sage', 'Salvia', 'Cool sage greens'], ['ember', 'Favilla', 'Charcoal with glowing amber']];
-  const SKIN_PREVIEW = { auto: ['#f6f1e7', '#8b2e2e'], parchment: ['#f6f1e7', '#8b2e2e'], night: ['#1b1a17', '#e08a8a'], navy: ['#0a1730', '#3dffc6'], peach: ['#fff0e4', '#df6b35'], blush: ['#fceff4', '#d4336e'], sage: ['#edf3ea', '#2e6b4e'], ember: ['#1d1a1f', '#ff9d3f'], rustic: ['#ece0c4', '#7a3b1e'], illustrata: ['#e0702f', '#ffffff'], candida: ['#ffffff', '#8b2e2e'] };
+  const SKINS = [['candida', 'Candida', 'Plain white'], ['illustrata', 'Per Sē', 'Orange and white, in the manner of a well-known Latin course'], ['rustic', 'Rūstica', 'Parchment, a handwritten title, sketched icons'], ['navy', 'Nox', 'Deep blue night with neon mint'], ['peach', 'Persica', 'Soft apricot and terracotta'], ['blush', 'Rosea', 'Rose pink'], ['sage', 'Salvia', 'Cool sage greens'], ['ember', 'Favilla', 'Charcoal with glowing amber'], ['purpura', 'Purpura', 'Imperial purple with gold']];
+  const SKIN_PREVIEW = { auto: ['#f6f1e7', '#8b2e2e'], parchment: ['#f6f1e7', '#8b2e2e'], night: ['#1b1a17', '#e08a8a'], navy: ['#0a1730', '#3dffc6'], peach: ['#fff0e4', '#df6b35'], blush: ['#fceff4', '#d4336e'], sage: ['#edf3ea', '#2e6b4e'], ember: ['#1d1a1f', '#ff9d3f'], rustic: ['#ece0c4', '#7a3b1e'], illustrata: ['#db7537', '#ffffff'], candida: ['#ffffff', '#8b2e2e'], purpura: ['#2a1033', '#e4b84a'] };
   function applyTheme() {
     const r = document.documentElement; let t = S.settings.theme;
     if (!SKINS.some(k => k[0] === t)) { t = (t === 'night' || t === 'dark') ? 'ember' : 'illustrata'; S.settings.theme = t; save('settings', S.settings); }
@@ -512,7 +512,7 @@
   const LEVELS = { 1: ['First steps', 'Short sentences, common words'], 2: ['Easy', 'Fables, epigrams, simple narrative'], 3: ['Intermediate', 'Caesar, Seneca, letters'], 4: ['Advanced', 'Oratory, lyric, Ovid'], 5: ['Expert', 'Epic, Lucretius, Tacitus'] };
   function renderReader() {
     const rd = load('read', { done: [], last: null });
-    let html = `<h1>Reader</h1>${artHTML('reader')}<p class="small muted">Real Latin, graded from easiest to hardest. Tap any word for its meaning and form; show the translation sentence by sentence. Texts are public domain; Plutarch wrote in Greek, so he is not here.</p><div class="progress"><i style="width:${Math.round(100 * rd.done.length / READ.length)}%"></i></div>`;
+    let html = `<h1>Reader</h1>${artHTML('reader')}<p class="small muted">Real Latin, graded from easiest to hardest. Tap any word for its meaning and form; show the translation sentence by sentence. All texts are in the public domain.</p><div class="progress"><i style="width:${Math.round(100 * rd.done.length / READ.length)}%"></i></div>`;
     for (const l of [1, 2, 3, 4, 5]) {
       const ps = READ.filter(p => p.level === l); if (!ps.length) continue;
       html += `<div class="lvlhead"><span class="lvl l${l}">Level ${l}</span><div><h2>${esc(LEVELS[l][0])}</h2><div class="d">${esc(LEVELS[l][1])}</div></div></div>`;
