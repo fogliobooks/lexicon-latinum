@@ -1,7 +1,7 @@
 /* Lexicon Latinum — app logic */
 (function () {
   'use strict';
-  const APP_BUILD = '2026-10-28.0328';
+  const APP_BUILD = '2026-10-28.1117';
   const $ = s => document.querySelector(s);
   const view = $('#view');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -359,7 +359,7 @@
       box.innerHTML = x;
     })();
     if (hlForm) { const el = view.querySelector('.hl'); if (el) el.scrollIntoView({ block: 'center' }); }
-    else window.scrollTo(0, 0);
+    else view.scrollTo(0, 0);
   }
   // Mark long senses; a clamped sense gets a "more" button
   function applyClamps() {
@@ -414,7 +414,7 @@
   function macFormGuess(e, nq) { const forms = Morph.generate(e); const x = forms.find(f => norm(f.f) === nq && f.common) || forms.find(f => norm(f.f) === nq); return x ? Macrons.mac(e, x) : nq; }
   // ---------------- home / saved / settings ----------------
   const WOTD = ['amicus', 'virtus', 'tempus', 'fortuna', 'bellum', 'pax', 'gloria', 'sapientia', 'libertas', 'veritas', 'fides', 'spes', 'carpo', 'memini', 'festino', 'fero', 'audeo', 'amo', 'rex', 'lux', 'nox', 'mare', 'caelum', 'terra', 'ignis', 'aqua', 'ventus', 'flumen', 'mons', 'silva', 'urbs', 'domus', 'via', 'iter', 'exercitus', 'imperium', 'senatus', 'populus', 'civis', 'hostis', 'dux', 'miles', 'poeta', 'liber', 'verbum', 'vox', 'oculus', 'manus', 'cor', 'animus', 'mens', 'corpus', 'vita', 'mors', 'deus', 'dea', 'fatum', 'natura', 'ars', 'otium', 'labor', 'ludus', 'fenestra', 'flos', 'rosa', 'arbor', 'hortus', 'vinum', 'panis', 'mel', 'cena', 'villa', 'ianua', 'puella', 'puer', 'mater', 'pater', 'frater', 'soror', 'filius', 'filia', 'uxor', 'coniunx', 'canis', 'equus', 'avis', 'leo', 'lupus', 'ovis', 'bos', 'piscis', 'serpens', 'aper', 'cervus', 'aquila', 'columba', 'facio', 'dico', 'video', 'venio', 'duco', 'capio', 'mitto', 'pono', 'scribo', 'lego', 'habeo', 'teneo', 'moneo', 'sequor', 'loquor', 'patior', 'morior', 'nascor', 'utor', 'sum', 'possum', 'eo', 'volo', 'nolo', 'malo', 'fio', 'do', 'sto', 'maneo', 'cado', 'curro', 'vinco', 'rego', 'ago', 'peto', 'quaero', 'laudo', 'voco', 'porto', 'specto', 'ambulo', 'intellego', 'cogito', 'disco', 'doceo', 'scio', 'nescio', 'credo', 'timeo', 'gaudeo', 'doleo', 'rideo', 'fleo', 'dormio', 'sentio', 'aperio', 'invenio', 'finis', 'initium', 'causa', 'res', 'dies', 'spes', 'fides', 'acies', 'species', 'genu', 'cornu', 'fructus', 'exercitus', 'lacus', 'portus', 'senex', 'iuvenis', 'homo', 'mulier', 'femina', 'vir', 'nomen', 'carmen', 'flumen', 'lumen', 'opus', 'onus', 'tempus', 'pectus', 'litus', 'vulnus', 'genus', 'bonus', 'malus', 'magnus', 'parvus', 'multus', 'omnis', 'fortis', 'brevis', 'longus', 'altus', 'novus', 'vetus', 'pulcher', 'acer', 'celer', 'felix', 'audax', 'sapiens', 'ingens', 'dulcis', 'gravis', 'levis', 'facilis', 'difficilis', 'similis', 'liber', 'miser', 'niger', 'ruber', 'sacer', 'tener', 'ego', 'tu', 'nos', 'vos', 'hic', 'ille', 'iste', 'is', 'idem', 'ipse', 'qui', 'quis', 'aliquis', 'quidam', 'unus', 'duo', 'tres', 'mille', 'bene', 'male', 'saepe', 'semper', 'numquam', 'nunc', 'tunc', 'cras', 'heri', 'hodie', 'ubi', 'unde', 'quo', 'cur', 'ita', 'sic', 'non', 'ne', 'et', 'sed', 'atque', 'aut', 'nec', 'cum', 'ad', 'ab', 'ex', 'in', 'de', 'per', 'pro', 'sine', 'sub', 'super', 'inter', 'ante', 'post', 'propter', 'trans', 'apud', 'ob', 'circum', 'contra', 'erga', 'ultra', 'citra', 'prae', 'coram', 'palam', 'tenus'];
-  const TIPS = ['Search any inflected form: amāverat, tulistī, puellaeque all find their dictionary word.', 'Tap the small (i) beside a case or tense to see what it does, with a sentence using a word of the same class as yours.', 'Macrons, i/j and u/v are optional when searching: amicus, amīcus and amicvs all work.', 'The enclitic -que ("and") is attached to the second of two words: senātus populusque.', 'Type an English word to go from English to Latin: "friend", "to fight", "kings".', 'Deponent verbs look passive but mean active: sequor "I follow", secūtus sum "I followed".', 'Settings → Download all stores the whole dictionary on your phone for use without a connection.', 'A neuter noun has identical nominative and accusative; in the plural both end in -a.', 'The genitive singular tells you the declension: -ae, -ī, -is, -ūs, -ēī.', 'Long entries in Lewis & Short are abridged to three lines per sense; tap "more" to unfold one, or switch it off in Settings.', 'Save a word with ☆ at the top of its entry; saved words and your history live in the Saved tab.', 'Each paradigm page in Grammar gives a sentence for every single form of its model word.'];
+  const TIPS = ['Search any inflected form: amāverat, tulistī, puellaeque all find their dictionary word.', 'Tap the small (i) beside a case or tense to see what it does, with a sentence using a word of the same class as yours.', 'Macrons, i/j and u/v are optional when searching: amicus, amīcus and amicvs all work.', 'The enclitic -que ("and") is attached to the second of two words: senātus populusque.', 'Type an English word to go from English to Latin: "friend", "to fight", "kings".', 'Deponent verbs look passive but mean active: sequor "I follow", secūtus sum "I followed".', 'Settings → Download all stores the whole dictionary on your phone for use without a connection.', 'A neuter noun has identical nominative and accusative; in the plural both end in -a.', 'The genitive singular tells you the declension: -ae, -ī, -is, -ūs, -ēī.', 'Long entries in Lewis & Short are abridged to three lines per sense; tap "more" to unfold one, or switch it off in Settings.', 'Save a word with ☆ at the top of its entry; the bookmark at the top of the screen opens your lexicon and history.', 'Each paradigm page in Grammar gives a sentence for every single form of its model word.'];
   const ICONS = {
     noun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14"/><path d="M4 20h16M8 8h8M8 12h8M8 16h5"/></svg>',
     adj: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18L10 4l6 14M6.5 13h7"/><path d="M17 10l3 3-3 3"/></svg>',
@@ -432,7 +432,7 @@
   };
   const GROUP_INFO = { 'Nouns': ['noun', 'Five declensions, every case', 'Nouns'], 'Adjectives & Adverbs': ['adj', 'Agreement and the three degrees', 'Adjectives'], 'Pronouns': ['pron', 'ego, hic, ille, is, quī and friends', 'Pronouns'], 'Verbs': ['verb', 'Conjugations, tenses, moods, deponents, irregulars', 'Verbs'], 'Syntax': ['syntax', 'Ablative absolute, indirect statement, cum clauses, conditions…', 'Syntax'], 'Reference': ['ref', 'Reading an entry, abbreviations', 'Reference'] };
   async function renderHome() {
-    const day = Math.floor(Date.now() / 86400000); const w = WOTD[day % WOTD.length]; const tip = TIPS[day % TIPS.length];
+    const day = Math.floor(Date.now() / 86400000); const w = WOTD[day % WOTD.length]; const tipsNow = IS_NATIVE ? TIPS.filter(t => !/Download all/.test(t)) : TIPS; const tip = tipsNow[day % tipsNow.length];
     const hist = S.history.slice(0, 12), favs = S.favs.slice(0, 12);
     const banners = Object.keys(ART).filter(k => k.startsWith('rome')); const bk = banners.length ? banners[day % banners.length] : null;
     let html = (bk ? artHTML(bk) : '') + `<div class="card hero-card" id="wotd"><div class="wotd-head"><span class="section-title" style="margin:0">Word of the day</span><a class="btn small" href="#/w/${WOTD[Math.floor(Math.random() * WOTD.length)]}">${ICONS.dice.replace('<svg', '<svg width="16" height="16" style="vertical-align:-3px;margin-right:4px"')}Random</a></div><a class="wotd-hw" href="#/w/${w}">${esc(w)}</a><div class="skel" style="width:60%"></div></div>`;
@@ -473,11 +473,11 @@
       <h2>Typeface</h2><div class="fontpick">${[['mixed', 'Mixed', 'EB Garamond for Latin, system sans for the rest'], ['serif', 'Serif', 'EB Garamond everywhere'], ['sans', 'Sans', 'System sans everywhere']].map(([id, name, desc]) => `<button class="${s.font === id ? 'on' : ''}" data-font="${id}"><span class="big" style="font-family:${id === 'sans' ? 'var(--sans-stack)' : 'var(--serif-stack)'}">${esc(name)} · amīcus</span><span class="sm">${esc(desc)}</span></button>`).join('')}</div>
       <div class="setting"><div><b>Text size</b></div><input type="range" id="fs" min="14" max="22" step="1" value="${s.fs}"></div>
       <div class="settings-h">Data &amp; updates</div>
-      <div class="setting"><div><b>Offline data</b><div class="d">Download the whole dictionary (about 80 MB) so lookups work without a connection. Looked-up words are cached automatically anyway.</div></div><button class="btn" id="dlall">Download all</button></div>
-      <div class="setting"><div><b>App version</b><div class="d">Build ${esc(APP_BUILD)}. The app checks for a newer version each time it opens and reloads itself when one is found.</div></div><button class="btn" id="chkupd">Check for updates</button></div>
-      <div class="setting"><div><b>Reload app</b><div class="d">Force a fresh copy of the app from the server (keeps your saved words and settings).</div></div><button class="btn" id="hardreload">Reload</button></div>
-      <div class="setting"><div><b>Clear cached data</b><div class="d">Removes downloaded dictionary chunks (not your saved words).</div></div><button class="btn" id="clearcache">Clear</button></div>
-      <h2>About</h2><p class="small">Lexicon Latinum combines <b>Lewis &amp; Short, A Latin Dictionary</b> (Oxford 1879; Perseus Digital Library edition, CC BY-SA 4.0) with the morphological data of <b>Whitaker's Words</b> (public domain). Every table is generated from Whitaker's stems and ending tables; vowel lengths on stems come from Lewis &amp; Short where the headwords match, and endings follow the standard quantities. Hidden quantities (as in rēxī) cannot be recovered automatically.</p><p class="small">Grammar notes and example sentences were written for this app and are keyed to the declension or conjugation of the word you look up.</p><p class="small muted">Data built ${Data.meta ? esc(Data.meta.built) : ''}.</p>`;
+      <div class="setting webonly"><div><b>Offline data</b><div class="d">Download the whole dictionary (about 80 MB) so lookups work without a connection. Looked-up words are cached automatically anyway.</div></div><button class="btn" id="dlall">Download all</button></div>
+      <div class="setting webonly"><div><b>App version</b><div class="d">Build ${esc(APP_BUILD)}. The app checks for a newer version each time it opens and reloads itself when one is found.</div></div><button class="btn" id="chkupd">Check for updates</button></div>
+      <div class="setting webonly"><div><b>Reload app</b><div class="d">Force a fresh copy of the app from the server (keeps your saved words and settings).</div></div><button class="btn" id="hardreload">Reload</button></div>
+      <div class="setting webonly"><div><b>Clear cached data</b><div class="d">Removes downloaded dictionary chunks (not your saved words).</div></div><button class="btn" id="clearcache">Clear</button></div>
+      <h2>About</h2><p class="small">Lexicon Latinum combines <b>Lewis &amp; Short, A Latin Dictionary</b> (Oxford 1879; Perseus Digital Library edition, CC BY-SA 4.0) with the morphological data of <b>Whitaker's Words</b> (public domain). Every table is generated from Whitaker's stems and ending tables; vowel lengths on stems come from Lewis &amp; Short where the headwords match, and endings follow the standard quantities. Hidden quantities (as in rēxī) cannot be recovered automatically.</p><p class="small">Grammar notes and example sentences were written for this app and are keyed to the declension or conjugation of the word you look up.</p><p class="small muted">Data built ${Data.meta ? esc(Data.meta.built) : ''}. · <a href="https://fogliobooks.github.io/lexicon-latinum/privacy.html">Privacy policy</a> · Contact: contact@foglioprint.com</p>`;
     view.querySelectorAll('[data-set]').forEach(b => b.onclick = () => { s[b.dataset.set] = !s[b.dataset.set]; save('settings', s); renderSettings(); });
     view.querySelectorAll('.swatch').forEach(b => b.onclick = () => { s.theme = b.dataset.skin; save('settings', s); applyTheme(); view.querySelectorAll('.swatch').forEach(x => x.classList.toggle('on', x === b)); });
     view.querySelectorAll('.fontpick button').forEach(b => b.onclick = () => { s.font = b.dataset.font; save('settings', s); applyTheme(); view.querySelectorAll('.fontpick button').forEach(x => x.classList.toggle('on', x === b)); });
@@ -499,14 +499,17 @@
   }
   const SKINS = [['candida', 'Candida', 'Plain white'], ['illustrata', 'Per Sē', 'Orange and white, in the manner of a well-known Latin course'], ['rustic', 'Rūstica', 'Parchment, a handwritten title, sketched icons'], ['navy', 'Nox', 'Deep blue night with neon mint'], ['peach', 'Persica', 'Soft apricot and terracotta'], ['blush', 'Rosea', 'Rose pink'], ['sage', 'Salvia', 'Cool sage greens'], ['ember', 'Favilla', 'Charcoal with glowing amber'], ['purpura', 'Purpura', 'Imperial purple with gold']];
   const SKIN_PREVIEW = { auto: ['#f6f1e7', '#8b2e2e'], parchment: ['#f6f1e7', '#8b2e2e'], night: ['#1b1a17', '#e08a8a'], navy: ['#0a1730', '#3dffc6'], peach: ['#fff0e4', '#df6b35'], blush: ['#fceff4', '#d4336e'], sage: ['#edf3ea', '#2e6b4e'], ember: ['#1d1a1f', '#ff9d3f'], rustic: ['#ece0c4', '#7a3b1e'], illustrata: ['#db7537', '#ffffff'], candida: ['#ffffff', '#8b2e2e'], purpura: ['#2a1033', '#e4b84a'] };
+  const IS_NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   function applyTheme() {
     const r = document.documentElement; let t = S.settings.theme;
+    if (IS_NATIVE) r.dataset.native = '1';
     if (!SKINS.some(k => k[0] === t)) { t = (t === 'night' || t === 'dark') ? 'ember' : 'illustrata'; S.settings.theme = t; save('settings', S.settings); }
     r.dataset.skin = t;
     if (S.settings.font === 'mixed') delete r.dataset.font; else r.dataset.font = S.settings.font;
     if (window.LX_EMBEDDED) r.dataset.embedded = '1';
     r.style.setProperty('--fs', S.settings.fs + 'px');
     requestAnimationFrame(() => { const cs = getComputedStyle(r); const bg = (cs.getPropertyValue('--hdr') || cs.getPropertyValue('--bg')).trim() || cs.getPropertyValue('--bg').trim(); document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', bg)); });
+    if (window.LXNative) try { window.LXNative.theme(getComputedStyle(r).getPropertyValue('--hdr').trim() || getComputedStyle(r).getPropertyValue('--bg').trim(), getComputedStyle(r).colorScheme === 'dark'); } catch (e) { }
   }
 
   // ---------------- artwork ----------------
@@ -523,7 +526,7 @@
       html += `<div class="lvlhead"><span class="lvl l${l}">Level ${l}</span><div><h2>${esc(LEVELS[l][0])}</h2><div class="d">${esc(LEVELS[l][1])}</div></div></div>`;
       html += ps.map(p => `<a class="card pcard ${rd.done.includes(p.id) ? 'read' : ''}" href="#/r/${p.id}">${ART[p.art || p.id] ? `<img src="art/${ART[p.art || p.id].file}" alt="" loading="lazy">` : '<span></span>'}<span><span class="t">${esc(p.title)}</span><span class="a">${esc(p.author)} · ${esc(p.work)} · ${p.la.join(' ').split(/\s+/).length} words</span></span></a>`).join('');
     }
-    view.innerHTML = html; window.scrollTo(0, 0);
+    view.innerHTML = html; view.scrollTo(0, 0);
   }
   const wordify = txt => esc(txt).replace(/([A-Za-zÀ-ÿ]+)/g, m => `<span class="w" data-w="${m}">${m}</span>`);
   function renderPassage(id) {
@@ -535,7 +538,7 @@
     html += `<div class="passage ${p.verse ? 'verse' : ''}" id="passage">${p.la.map((para, k) => `<p>${wordify(para)}</p><div class="tr"><div>${esc(p.en[k] || '')}</div></div>`).join('')}</div>`;
     if (p.notes && p.notes.length) html += `<h2>Notes</h2><dl class="notes">${p.notes.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;
     html += `<div class="pnav">${prev ? `<a class="btn" href="#/r/${prev.id}">‹ ${esc(prev.title)}</a>` : '<span></span>'}${next ? `<a class="btn primary" href="#/r/${next.id}">${esc(next.title)} ›</a>` : ''}</div>`;
-    view.innerHTML = html; window.scrollTo(0, 0);
+    view.innerHTML = html; view.scrollTo(0, 0);
     $('#trbtn').onclick = () => { const ps = $('#passage'); ps.classList.toggle('showtr'); $('#trbtn').textContent = ps.classList.contains('showtr') ? 'Hide translation' : 'Show translation'; };
     $('#donebtn').onclick = () => { const r = load('read', { done: [], last: null }); if (r.done.includes(id)) r.done = r.done.filter(x => x !== id); else r.done.push(id); save('read', r); const on = r.done.includes(id); $('#donebtn').textContent = on ? 'Read ✓' : 'Mark as read'; $('#donebtn').classList.toggle('on', on); if (on) toast('Marked as read'); };
     $('#passage').onclick = ev => { const w = ev.target.closest('.w'); if (!w) return; ev.stopPropagation(); if (w.classList.contains('on') && popEl) { closePop(); return; } $('#passage').querySelectorAll('.w.on').forEach(x => x.classList.remove('on')); w.classList.add('on'); wordPop(w); };
@@ -573,16 +576,17 @@
   function placePop(wEl) {
     let r = wEl.getBoundingClientRect(); const pw = popEl.offsetWidth || 300; const ph = popEl.offsetHeight || 80;
     const barTop = window.innerHeight - 96 - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sab')) || 0);
-    if (r.bottom > barTop - 8) { window.scrollBy({ top: r.bottom - (barTop - 8), left: 0, behavior: 'instant' }); r = wEl.getBoundingClientRect(); }
+    if (r.bottom > barTop - 8) { view.scrollBy({ top: r.bottom - (barTop - 8), left: 0, behavior: 'instant' }); r = wEl.getBoundingClientRect(); }
     const vw = document.documentElement.clientWidth; const headerH = ($('#top') ? $('#top').getBoundingClientRect().bottom : 0);
     let left = r.left + r.width / 2 - pw / 2; left = Math.max(12, Math.min(vw - pw - 12, left));
     const above = r.top - headerH > ph + 14;
-    const top = above ? r.top + window.scrollY - ph - 10 : r.bottom + window.scrollY + 10;
+    const top = above ? r.top - ph - 10 : r.bottom + 10;
     popEl.style.left = left + 'px'; popEl.style.top = top + 'px'; popEl.className = above ? 'above' : 'below';
     popEl.style.setProperty('--ax', (r.left + r.width / 2 - left) + 'px');
   }
   document.addEventListener('click', ev => { if (popEl && !ev.target.closest('.passage .w')) closePop(); });
   window.addEventListener('hashchange', closePop);
+  view.addEventListener('scroll', () => { if (popEl) closePop(); }, { passive: true });
   async function quickGloss(word) {
     const body = $('#sheet .sheet-body'); body.innerHTML = `<div class="gloss-hw">${esc(word)}</div><div class="skel" style="width:50%"></div><div class="skel"></div>`; $('#sheet').hidden = false; document.body.style.overflow = 'hidden';
     try {
@@ -671,7 +675,7 @@
     let html = `<p class="small muted"><a href="#/play">Games</a> · Lacūnae · <span class="lvl l${p.level}">Level ${p.level}</span></p><h1>${esc(p.title)}</h1><p class="muted">${esc(p.author)}, <i>${esc(p.work)}</i></p><p class="small">Pick the word that belongs in each gap. The sense of the sentence, and the endings around it, are your clues.</p>`;
     const paras = p.la.map((_, pi) => tokens.map((x, i) => { const b = C.blanks.find(b => b.i === i); if (x.pi !== pi) return ''; if (!b) return esc(x.t); return x.t.replace(b.w, `<span class="blank" data-k="${b.k}" id="bl${b.k}">&nbsp;</span>`); }).join(''));
     html += `<div class="cloze ${p.verse ? 'verse' : ''}">${paras.map(x => `<p>${x}</p>`).join('')}</div><div class="choices" id="choices"></div><div id="cresult"></div>`;
-    view.innerHTML = html; window.scrollTo(0, 0);
+    view.innerHTML = html; view.scrollTo(0, 0);
     view.querySelector('.cloze').onclick = ev => { const b = ev.target.closest('.blank'); if (b && !b.classList.contains('ok') && !b.classList.contains('bad')) { C.cur = +b.dataset.k; showChoices(); } };
     showChoices();
   }
@@ -932,7 +936,7 @@
     let html = `<div class="chapter"><p class="small muted">${esc(c.group)}</p><h1>${esc(c.title)}</h1>${c.html}`;
     if (c.packs && c.packs.length) { html += `<h2>Paradigms</h2>`; for (const pid of c.packs) { const pk = PACKS_ALL[pid]; if (!pk) continue; html += `<div class="card"><h3 style="margin-top:0"><a href="#/p/${pid}">${esc(pk.title)}</a> <span class="muted small la">${esc(pk.model.hw)}${pk.model.parts ? ', ' + esc(pk.model.parts.replace(/^[^,]*,\s*/, '')) : ''}</span></h3>${packTableHTML(pk, true)}</div>`; } }
     html += `</div>`;
-    view.innerHTML = html; window.scrollTo(0, 0);
+    view.innerHTML = html; view.scrollTo(0, 0);
   }
   function modelEntry(pk) {
     if (!pk.modelEntry) return null;
@@ -963,7 +967,7 @@
     if (pk.rows) { html += `<h2>Every form in a sentence</h2><div class="exrows">${Object.entries(pk.rows).map(([k, r]) => `<div class="r"><div class="k">${esc(rowLabel(k))}${r.note ? ` · <span class="note">${esc(r.note)}</span>` : ''}</div><p class="ex">${esc(r.ex)}</p><p class="en">${esc(r.en)}</p></div>`).join('')}</div>`; }
     if (pk.tips && pk.tips.length) html += `<h2>Tips</h2><ul class="uses">${pk.tips.map(t => `<li>${t}</li>`).join('')}</ul>`;
     if (pk.related && pk.related.length) html += `<div class="section-title">Compare</div><div class="pill-row">${pk.related.filter(r => PACKS_ALL[r]).map(r => `<a class="chip" href="#/p/${r}">${esc(PACKS_ALL[r].title)}</a>`).join('')}</div>`;
-    view.innerHTML = html; window.scrollTo(0, 0);
+    view.innerHTML = html; view.scrollTo(0, 0);
   }
   function rowLabel(k) {
     const w = k.split(' ');
@@ -1047,11 +1051,11 @@
       else if (h === '#/settings') { setTab(''); renderSettings(); }
       else if (h === '#/play' || kind === 'play') { setTab('play'); renderPlay(arg); }
       else if (h === '#/r' || kind === 'r') { setTab('read'); arg ? renderPassage(arg) : renderReader(); }
-      else if (h === '#/g') { setTab('grammar'); renderGrammarIndex(); window.scrollTo(0, 0); }
+      else if (h === '#/g') { setTab('grammar'); renderGrammarIndex(); view.scrollTo(0, 0); }
       else if (kind === 'w') { setTab('home'); await renderWord(norm(arg), qs && qs.get('f') ? norm(qs.get('f')) : null); }
       else if (kind === 's') { setTab('home'); $('#q').value = arg; $('#clearq').hidden = !arg; await doSearch(arg); }
-      else if (h === '#/g') { setTab('grammar'); renderGrammarIndex(); window.scrollTo(0, 0); }
-      else if (kind === 'gg') { setTab('grammar'); renderGrammarIndex(arg); window.scrollTo(0, 0); }
+      else if (h === '#/g') { setTab('grammar'); renderGrammarIndex(); view.scrollTo(0, 0); }
+      else if (kind === 'gg') { setTab('grammar'); renderGrammarIndex(arg); view.scrollTo(0, 0); }
       else if (kind === 'g') { setTab('grammar'); renderChapter(arg); }
       else if (kind === 'p') { setTab('grammar'); renderPack(arg); }
       else if (h === '#/saved') { setTab('saved'); renderSaved(); }
@@ -1065,6 +1069,7 @@
   $('#clearq').onclick = () => { $('#q').value = ''; $('#clearq').hidden = true; $('#q').focus(); location.hash = '#/'; };
   const backBtn = $('#back'); if (backBtn) backBtn.onclick = () => { navStack.pop(); const prev = navStack.pop(); navStack._back = false; if (prev) { navStack.push(prev); navStack._back = true; location.hash = prev; } else location.hash = '#/'; };
   document.addEventListener('click', ev => {
+    const ext = ev.target.closest('a[href^="http"]'); if (ext && IS_NATIVE) { ev.preventDefault(); if (window.LXNative) window.LXNative.open(ext.href); return; }
     const ib = ev.target.closest('.ibtn'); if (ib && ib.dataset.info) { ev.preventDefault(); showInfo(JSON.parse(ib.dataset.info)); return; }
     const tb = ev.target.closest('.subtabs button'); if (tb) { const grp = tb.parentElement; grp.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === tb)); grp.querySelectorAll('button').forEach(b => { const pane = document.getElementById(b.dataset.show); if (pane) pane.hidden = b !== tb; }); return; }
     const tc = ev.target.closest('.togglecit'); if (tc) { const ls = tc.closest('details').querySelector('.ls'); ls.classList.toggle('nocit'); tc.textContent = ls.classList.contains('nocit') ? 'Show citations' : 'Hide citations'; applyClamps(); return; }
@@ -1082,7 +1087,7 @@
   document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
   let lastTap = 0; document.addEventListener('touchend', e => { const now = Date.now(); if (now - lastTap < 300 && !e.target.closest('input, textarea')) e.preventDefault(); lastTap = now; }, { passive: false });
   applyTheme();
-  if (!window.LX_EMBEDDED && 'serviceWorker' in navigator) {
+  if (!window.LX_EMBEDDED && !IS_NATIVE && 'serviceWorker' in navigator) {
     let hadController = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) { toast('Updating to the latest version…'); setTimeout(() => location.reload(), 600); } hadController = true; });
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
