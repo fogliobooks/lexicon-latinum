@@ -42,7 +42,7 @@ a{color:var(--accent2);text-decoration:none}
 button{font:inherit;color:inherit}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--hdr,var(--bg))}
 header#top{position:relative;flex:0 0 auto;z-index:20;background:var(--hdr,var(--bg));border-bottom:1px solid var(--line)}
-.titlebar{position:relative;text-align:center;padding-top:max(14px,env(safe-area-inset-top,0px));padding-bottom:2px}
+.titlebar{position:relative;text-align:center;padding-top:max(14px,calc(env(safe-area-inset-top,0px) + 12px));padding-bottom:2px}
 .titlebar .gear{position:absolute;right:max(8px,env(safe-area-inset-right,0px));bottom:0;color:var(--muted)}
 .titlebar .bookmark{position:absolute;left:max(8px,env(safe-area-inset-left,0px));bottom:0;color:var(--muted)}
 :root[data-skin="illustrata"] .titlebar .gear,:root[data-skin="illustrata"] .titlebar .bookmark{color:#fff}
@@ -338,10 +338,10 @@ table.para tr{transition:background .2s}
 /* glass cards for dark skins get a faint highlight */
 :root[data-skin="navy"] .card,:root[data-skin="favilla"] .card,:root[data-skin="ember"] .card{box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.06)}
 /* artwork */
-.art{position:relative;border-radius:16px;overflow:hidden;margin:10px 0;aspect-ratio:16/9;background:var(--chip)}
-.art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.art{position:relative;border-radius:16px;overflow:hidden;margin:10px 0;background:var(--chip)}
+.art img{width:100%;height:auto;display:block}
 .art .cap{position:absolute;left:0;right:0;bottom:0;padding:18px 12px 8px;font-size:.72rem;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.65))}
-.art.tall{aspect-ratio:4/3}
+
 .pcard{display:grid;grid-template-columns:72px 1fr;gap:12px;align-items:center}
 .pcard img{width:72px;height:72px;object-fit:cover;border-radius:10px}
 .pcard .t{margin-bottom:2px}
