@@ -20,6 +20,19 @@ var ARTWORK = {
   roses: { file: 'roses.jpg', artist: 'Lawrence Alma-Tadema', title: 'The Roses of Heliogabalus', year: '1888' },
   horace: { file: 'horace.jpg', artist: 'Anton von Werner', title: 'Horace', year: '1905' },
   martyrs: { file: 'martyrs.jpg', artist: 'Jean-Léon Gérôme', title: "The Christian Martyrs' Last Prayer", year: '1883' },
+  pompeii2: { file: 'bryullov_pompeii.jpg', artist: 'Karl Bryullov', title: 'The Last Day of Pompeii', year: '1833' },
+  decadence: { file: 'couture_romans.jpg', artist: 'Thomas Couture', title: 'The Romans in their Decadence', year: '1847' },
+  horatii: { file: 'david_horatii.jpg', artist: 'Jacques-Louis David', title: 'Oath of the Horatii', year: '1784' },
+  ovid: { file: 'delacroix_ovid.jpg', artist: 'Eugène Delacroix', title: 'Ovid among the Scythians', year: '1859' },
+  caesar: { file: 'gerome_caesar.jpg', artist: 'Jean-Léon Gérôme', title: 'The Death of Caesar', year: '1867' },
+  pollice: { file: 'gerome_pollice.jpg', artist: 'Jean-Léon Gérôme', title: 'Pollice Verso', year: '1872' },
+  sheba: { file: 'lorrain_sheba.jpg', artist: 'Claude Lorrain', title: 'Seaport with the Embarkation of the Queen of Sheba', year: '1648' },
+  romaantica: { file: 'panini_ancient.jpg', artist: 'Giovanni Paolo Panini', title: 'Ancient Rome', year: '1757' },
+  arcadia: { file: 'poussin_arcadia.jpg', artist: 'Nicolas Poussin', title: 'Et in Arcadia ego', year: 'c. 1638' },
+  spring: { file: 'tadema_spring.jpg', artist: 'Lawrence Alma-Tadema', title: 'Spring', year: '1894' },
+  agrippina: { file: 'turner_ancient.jpg', artist: 'J. M. W. Turner', title: 'Ancient Rome; Agrippina Landing with the Ashes of Germanicus', year: '1839' },
   reader: { file: 'lorrain.jpg', artist: 'Claude Lorrain', title: 'Capriccio with Ruins of the Roman Forum', year: 'c. 1634' },
 };
+/* Paintings that may appear on the home page, chosen at random each visit. */
+var HOME_ART = ['adam', 'agrippina', 'alesia', 'arcadia', 'caesar', 'cicero', 'decadence', 'dido', 'horatii', 'jerome', 'martyrs', 'ovid', 'pollice', 'pompeii', 'pompeii2', 'romaantica', 'rome1', 'rome2', 'rome3', 'rome5', 'roses', 'seneca', 'sheba', 'venus', 'wolf'];
 if (typeof module === 'object' && module.exports) module.exports = ARTWORK;

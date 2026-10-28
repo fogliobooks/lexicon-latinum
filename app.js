@@ -1,7 +1,7 @@
 /* Lexicon Latinum — app logic */
 (function () {
   'use strict';
-  const APP_BUILD = '2026-10-28.1233';
+  const APP_BUILD = '2026-10-28.1955';
   const $ = s => document.querySelector(s);
   const view = $('#view');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -434,8 +434,8 @@
   async function renderHome() {
     const day = Math.floor(Date.now() / 86400000); const w = WOTD[day % WOTD.length]; const tipsNow = IS_NATIVE ? TIPS.filter(t => !/Download all/.test(t)) : TIPS; const tip = tipsNow[day % tipsNow.length];
     const hist = S.history.slice(0, 12), favs = S.favs.slice(0, 12);
-    const banners = Object.keys(ART).filter(k => k.startsWith('rome')); const bk = banners.length ? banners[day % banners.length] : null;
-    let html = (bk ? artHTML(bk) : '') + `<div class="card hero-card" id="wotd"><div class="wotd-head"><span class="section-title" style="margin:0">Word of the day</span><a class="btn small" href="#/w/${WOTD[Math.floor(Math.random() * WOTD.length)]}">${ICONS.dice.replace('<svg', '<svg width="16" height="16" style="vertical-align:-3px;margin-right:4px"')}Random</a></div><a class="wotd-hw" href="#/w/${w}">${esc(w)}</a><div class="skel" style="width:60%"></div></div>`;
+    const banners = (typeof HOME_ART !== 'undefined' ? HOME_ART : Object.keys(ART).filter(k => k.startsWith('rome'))).filter(k => ART[k]); const bk = banners.length ? banners[Math.floor(Math.random() * banners.length)] : null;
+    let html = (bk ? artHTML(bk, 'banner') : '') + `<div class="card hero-card" id="wotd"><div class="wotd-head"><span class="section-title" style="margin:0">Word of the day</span><a class="btn small" href="#/w/${WOTD[Math.floor(Math.random() * WOTD.length)]}">${ICONS.dice.replace('<svg', '<svg width="16" height="16" style="vertical-align:-3px;margin-right:4px"')}Random</a></div><a class="wotd-hw" href="#/w/${w}">${esc(w)}</a><div class="skel" style="width:60%"></div></div>`;
     const mini = h => `<a class="mini" href="#/w/${encodeURIComponent(h.nk)}"><span class="hw">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</span><span class="gl">${esc(h.gl || '')}</span></a>`;
     if (hist.length) html += `<div class="section-title">Recent</div><div class="hscroll">${hist.map(mini).join('')}</div>`;
     if (favs.length) html += `<div class="section-title">My lexicon <a class="small" href="#/saved" style="font-weight:400;text-transform:none;letter-spacing:0;margin-left:8px">all ${S.favs.length} ›</a></div><div class="hscroll">${favs.map(mini).join('')}</div>`;
@@ -755,7 +755,7 @@
       end = `<div class="card done gend"><div class="big la">${esc(VB.ans[1])}</div><p>${esc(VB.ans[2])}</p><p class="small muted">${won ? `Solved in ${VB.rows.length} ${VB.rows.length === 1 ? 'try' : 'tries'}.` : 'Not this time.'}</p><p><a class="btn primary" href="#/w/${encodeURIComponent(norm(VB.ans[1]))}">Open entry</a> <button class="btn" id="vshare">Share</button> ${VB.daily ? '<button class="btn" id="vrandom">Play a random word</button>' : '<button class="btn" id="vrandom">Another word</button>'}</p></div>`;
     }
     view.innerHTML = `${crumb('Verbum')}<div class="game-top"><h1 style="margin:0">Verbum</h1><div class="seg" id="vseg"><button data-d="1" class="${VB.daily ? 'on' : ''}">Daily</button><button data-d="0" class="${VB.daily ? '' : 'on'}">Random</button></div></div><p class="small muted one">Five letters, six tries. Any Latin form counts; write u for v and i for j.</p><div class="grow"><div class="vgrid" id="vgrid">${grid}</div></div>${VB.done ? end + stats : keyboardHTML(KB_ROWS, VB.keys)}`;
-    fitCells($('#vgrid'), 6, 5, 6, 60, '--vc');
+    fitCells($('#vgrid'), 6, 5, 6, 76, '--vc');
     $('#vseg').onclick = ev => { const b = ev.target.closest('button'); if (b) verbumStart(b.dataset.d === '1'); };
     view.querySelector('.kb').onclick = ev => { const b = ev.target.closest('button'); if (b) verbumKey(b.dataset.k); };
     const sh = $('#vshare'); if (sh) sh.onclick = () => { const txt = `Verbum ${VB.daily ? 'diēī ' + new Date().toISOString().slice(0, 10) : ''} ${VB.rows[VB.rows.length - 1] === VB.ans[0] ? VB.rows.length : 'X'}/6\n` + VB.rows.map(r => verbumScore(r).replace(/g/g, '🟩').replace(/y/g, '🟨').replace(/x/g, '⬜')).join('\n') + '\nlexicon latinum'; if (navigator.share) navigator.share({ text: txt }).catch(() => {}); else if (navigator.clipboard) { navigator.clipboard.writeText(txt); toast('Copied'); } };
@@ -849,7 +849,7 @@
     const ring = `<div class="ring" id="ring">${CR.letters.map((ch, k) => { const a = -Math.PI / 2 + k * 2 * Math.PI / n; return `<button class="rl ${CR.cur.includes(k) ? 'on' : ''}" data-k="${k}" style="left:${(50 + 50 * Math.cos(a) * R / 110).toFixed(1)}%;top:${(50 + 50 * Math.sin(a) * R / 110).toFixed(1)}%">${ch}</button>`; }).join('')}<div class="ringc">${done ? '✓' : ''}</div></div>`;
     const foundList = [...CR.found, ...CR.bonus].sort().map(w => `<span class="chip la" title="${esc((p.dict[w] || [])[1] || '')}"><b>${esc(w)}</b> ${esc((p.dict[w] || [])[1] || '')}</span>`).join('');
     view.innerHTML = `${crumb('Corōna')}<div class="game-top"><h1 style="margin:0">Corōna <span class="muted small">${CR.i + 1}/${CORONA_ALL.length} · ${p.grid.filter(w => CR.found.has(w.w)).length} of ${p.grid.length}${CR.bonus.size ? ` +${CR.bonus.size}` : ''}</span></h1><div class="seg"><button id="crprev" ${CR.i === 0 ? 'disabled' : ''}>‹</button><button id="crnext" ${CR.i >= CORONA_ALL.length - 1 ? 'disabled' : ''}>›</button></div></div><div class="grow">${grid}</div><div class="crword la" id="crword">${CR.cur.map(k => CR.letters[k]).join('') || '&nbsp;'}</div>${ring}<p class="crbtns"><button class="btn" id="crshuf">Shuffle</button><button class="btn" id="crdel">Delete</button><button class="btn" id="crhint">Hint</button><button class="btn primary" id="crenter">Enter</button></p><div class="crfound hscroll">${done ? `<span class="chip"><b>Corōna complēta!</b> <a href="#/play/corona/${CR.i + 2}">Next ring ›</a></span>` : ''}${foundList}</div>`;
-    fitCells(view.querySelector('.cwgrid'), p.h, p.w, 3, 36, '--cwc');
+    fitCells(view.querySelector('.cwgrid'), p.h, p.w, 3, 48, '--cwc');
     $('#crprev').onclick = () => coronaStart(CR.i - 1); $('#crnext').onclick = () => coronaStart(CR.i + 1);
     $('#crshuf').onclick = () => { CR.letters = shuffle(CR.letters.slice()); CR.cur = []; coronaDraw(); };
     $('#crdel').onclick = () => { CR.cur.pop(); coronaWord(); };
