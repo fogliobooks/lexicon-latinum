@@ -6,7 +6,7 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const load = (k, d) => { try { const v = localStorage.getItem('lx.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
   const save = (k, v) => { try { localStorage.setItem('lx.' + k, JSON.stringify(v)); } catch (e) { } };
-  const S = { settings: Object.assign({ macrons: true, rare: false, cit: true, theme: 'auto', font: 'mixed', fs: 16 }, load('settings', {})), history: load('history', []), favs: load('favs', []) };
+  const S = { settings: Object.assign({ macrons: true, rare: false, cit: true, theme: 'auto', font: 'mixed', fs: 16, abridge: true }, load('settings', {})), history: load('history', []), favs: load('favs', []) };
   const norm = s => Morph.norm(s.normalize('NFD').replace(/[̀-ͯ]/g, '')).replace(/[^a-z' -]/g, '');
   const strip = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
 
@@ -287,16 +287,16 @@
   function lsHTML(ls) {
     const n = ls.n ? `<sup class="muted">${esc(ls.n)}</sup>` : '';
     const typ = ls.t && ls.t !== 'main' ? `<span class="chip">${esc({ greek: 'Greek word', hapax: 'attested once', gloss: 'glossary word', spur: 'spurious', foreign: 'foreign word' }[ls.t] || ls.t)}</span>` : '';
-    return `<details class="lsd" open><summary>Lewis &amp; Short${n} ${typ}</summary><div class="ls${S.settings.cit ? '' : ' nocit'}">${ls.b}</div><div class="toggle-row"><button class="btn small togglecit">${S.settings.cit ? 'Hide citations' : 'Show citations'}</button></div></details>`;
+    return `<details class="lsd" open><summary>Lewis &amp; Short${n} ${typ}</summary><div class="ls${S.settings.cit ? '' : ' nocit'}${S.settings.abridge ? ' abridged' : ''}">${ls.b}</div><div class="toggle-row"><button class="btn small toggleabr">${S.settings.abridge ? 'Show full entry' : 'Abridge'}</button><button class="btn small togglecit">${S.settings.cit ? 'Hide citations' : 'Show citations'}</button></div></details>`;
   }
   async function renderWord(nk, hlForm) {
     await Data.ready;
-    view.innerHTML = `<p class="muted">Loading…</p>`;
+    view.innerHTML = `<div class="skel" style="width:40%;height:28px"></div><div class="card"><div class="skel" style="width:55%;height:22px"></div><div class="skel" style="width:90%"></div><div class="skel" style="width:70%"></div><div class="skel" style="width:85%"></div></div>`;
     const [rec, ww, lsList] = await Promise.all([idxRecord(nk), wwChunk(letterOf(nk)), lsEntries(nk)]);
     const entries = rec ? rec[5].map(id => ww._map.get(id)).filter(Boolean) : [];
     if (!rec && !lsList.length && !entries.length) { view.innerHTML = `<div class="empty">No entry for <b class="la">${esc(nk)}</b>.</div>`; return; }
     const hw = rec ? rec[1] : (lsList[0] && lsList[0].h) || nk;
-    pushHistory(nk, hw);
+    pushHistory(nk, hw, rec ? rec[3] : '');
     const fav = S.favs.some(f => f.nk === nk);
     let html = `<div class="hwline" style="justify-content:space-between"><h1 class="la" style="margin:4px 0">${esc(S.settings.macrons ? hw : strip(hw))}</h1><button class="iconbtn fav" data-nk="${esc(nk)}" data-hw="${esc(hw)}" aria-label="Save">${fav ? '★' : '☆'}</button></div>`;
     // pair L&S entries with Whitaker entries by part of speech
@@ -315,8 +315,18 @@
     for (const g of groups) html += entryCard(g.e, g.ls, hlForm);
     for (const l of rest.filter(l => !used.has(l.k))) html += `<div class="card">${lsHTML(l)}</div>`;
     view.innerHTML = html;
+    applyClamps();
     if (hlForm) { const el = view.querySelector('.hl'); if (el) el.scrollIntoView({ block: 'center' }); }
     else window.scrollTo(0, 0);
+  }
+  // Mark long senses; a clamped sense gets a "more" button
+  function applyClamps() {
+    view.querySelectorAll('.ls').forEach(ls => {
+      ls.querySelectorAll('.sense').forEach(se => { if (se.textContent.length > 260) se.classList.add('long'); });
+      ls.querySelectorAll('.morebtn').forEach(b => b.remove());
+      if (!ls.classList.contains('abridged')) return;
+      ls.querySelectorAll('.sense.long').forEach(se => { if (se.scrollHeight > se.clientHeight + 3) { const b = document.createElement('button'); b.className = 'morebtn'; b.textContent = 'more…'; b.onclick = () => { se.classList.toggle('open'); b.textContent = se.classList.contains('open') ? 'less' : 'more…'; }; se.after(b); } });
+    });
   }
 
   // ---------------- search ----------------
@@ -341,7 +351,7 @@
     for (const a of an) { const k = a.entry.i; if (!byEntry.has(k)) byEntry.set(k, { e: a.entry, descs: [], enc: a.enclitic, common: false }); const g = byEntry.get(k); const d = Morph.describe(a.r); if (!g.descs.includes(d)) g.descs.push(d); if (a.common) g.common = true; }
     const anal = [...byEntry.values()].filter(g => !exact.some(r => r[5].includes(g.e.i) && norm(g.e.hw) === nq)).sort((a, b) => (b.common - a.common) || ((b.e.f && 'ABC'.includes(b.e.f[3])) - (a.e.f && 'ABC'.includes(a.e.f[3]))));
     let html = '';
-    const row = r => `<a class="row" href="#/w/${encodeURIComponent(r[0])}"><span class="hw">${esc(S.settings.macrons ? r[1] : strip(r[1]))}</span> <span class="pos">${esc(r[2].split(',').map(p => CORE.pos[p] || p.toLowerCase()).join(', '))}</span><span class="gl">${esc(r[3])}</span></a>`;
+    const row = r => `<a class="row" href="#/w/${encodeURIComponent(r[0])}"><span class="hw">${esc(S.settings.macrons ? r[1] : strip(r[1]))}</span>${r[2].split(',').filter(Boolean).map(p => `<span class="posb">${esc(CORE.pos[p] || p.toLowerCase())}</span>`).join('')}<span class="gl">${esc(r[3])}</span></a>`;
     if (exact.length) html += `<div class="results">${exact.map(row).join('')}</div>`;
     if (anal.length) {
       html += `<div class="section-title">Forms of other words</div><div class="results analysis">` + anal.slice(0, 25).map(g => { const pid = packFor(g.e); return `<a class="row" href="#/w/${encodeURIComponent(norm(g.e.hw))}?f=${encodeURIComponent(nq)}"><span class="form la">${esc(S.settings.macrons ? macFormGuess(g.e, nq) : q)}</span>${g.enc ? `<span class="chip">+ ${esc(g.enc)}</span>` : ''} <span class="pos">${esc(g.descs.slice(0, 3).join('; '))}${g.descs.length > 3 ? ' …' : ''}</span><span class="gl"><b class="la">${esc(macHw(g.e))}</b> — ${esc((g.e.m || '').replace(/^\|+/, '').split(';').slice(0, 2).join(';'))}</span></a>`; }).join('') + `</div>`;
@@ -362,18 +372,35 @@
   function macFormGuess(e, nq) { const forms = Morph.generate(e); const x = forms.find(f => norm(f.f) === nq && f.common) || forms.find(f => norm(f.f) === nq); return x ? Macrons.mac(e, x) : nq; }
   // ---------------- home / saved / settings ----------------
   const WOTD = ['amicus', 'virtus', 'tempus', 'fortuna', 'bellum', 'pax', 'gloria', 'sapientia', 'libertas', 'veritas', 'fides', 'spes', 'carpo', 'memini', 'festino', 'fero', 'audeo', 'amo', 'rex', 'lux', 'nox', 'mare', 'caelum', 'terra', 'ignis', 'aqua', 'ventus', 'flumen', 'mons', 'silva', 'urbs', 'domus', 'via', 'iter', 'exercitus', 'imperium', 'senatus', 'populus', 'civis', 'hostis', 'dux', 'miles', 'poeta', 'liber', 'verbum', 'vox', 'oculus', 'manus', 'cor', 'animus', 'mens', 'corpus', 'vita', 'mors', 'deus', 'dea', 'fatum', 'natura', 'ars', 'otium', 'labor', 'ludus', 'fenestra', 'flos', 'rosa', 'arbor', 'hortus', 'vinum', 'panis', 'mel', 'cena', 'villa', 'ianua', 'puella', 'puer', 'mater', 'pater', 'frater', 'soror', 'filius', 'filia', 'uxor', 'coniunx', 'canis', 'equus', 'avis', 'leo', 'lupus', 'ovis', 'bos', 'piscis', 'serpens', 'aper', 'cervus', 'aquila', 'columba', 'facio', 'dico', 'video', 'venio', 'duco', 'capio', 'mitto', 'pono', 'scribo', 'lego', 'habeo', 'teneo', 'moneo', 'sequor', 'loquor', 'patior', 'morior', 'nascor', 'utor', 'sum', 'possum', 'eo', 'volo', 'nolo', 'malo', 'fio', 'do', 'sto', 'maneo', 'cado', 'curro', 'vinco', 'rego', 'ago', 'peto', 'quaero', 'laudo', 'voco', 'porto', 'specto', 'ambulo', 'intellego', 'cogito', 'disco', 'doceo', 'scio', 'nescio', 'credo', 'timeo', 'gaudeo', 'doleo', 'rideo', 'fleo', 'dormio', 'sentio', 'aperio', 'invenio', 'finis', 'initium', 'causa', 'res', 'dies', 'spes', 'fides', 'acies', 'species', 'genu', 'cornu', 'fructus', 'exercitus', 'lacus', 'portus', 'senex', 'iuvenis', 'homo', 'mulier', 'femina', 'vir', 'nomen', 'carmen', 'flumen', 'lumen', 'opus', 'onus', 'tempus', 'pectus', 'litus', 'vulnus', 'genus', 'bonus', 'malus', 'magnus', 'parvus', 'multus', 'omnis', 'fortis', 'brevis', 'longus', 'altus', 'novus', 'vetus', 'pulcher', 'acer', 'celer', 'felix', 'audax', 'sapiens', 'ingens', 'dulcis', 'gravis', 'levis', 'facilis', 'difficilis', 'similis', 'liber', 'miser', 'niger', 'ruber', 'sacer', 'tener', 'ego', 'tu', 'nos', 'vos', 'hic', 'ille', 'iste', 'is', 'idem', 'ipse', 'qui', 'quis', 'aliquis', 'quidam', 'unus', 'duo', 'tres', 'mille', 'bene', 'male', 'saepe', 'semper', 'numquam', 'nunc', 'tunc', 'cras', 'heri', 'hodie', 'ubi', 'unde', 'quo', 'cur', 'ita', 'sic', 'non', 'ne', 'et', 'sed', 'atque', 'aut', 'nec', 'cum', 'ad', 'ab', 'ex', 'in', 'de', 'per', 'pro', 'sine', 'sub', 'super', 'inter', 'ante', 'post', 'propter', 'trans', 'apud', 'ob', 'circum', 'contra', 'erga', 'ultra', 'citra', 'prae', 'coram', 'palam', 'tenus'];
-  function renderHome() {
-    const day = Math.floor(Date.now() / 86400000); const w = WOTD[day % WOTD.length];
-    const hist = S.history.slice(0, 12), favs = S.favs.slice(0, 8);
-    let html = `<div class="card"><div class="section-title" style="margin-top:0">Word of the day</div><a href="#/w/${w}" class="wotd">${esc(w)}</a> <span class="muted small">— tap to look it up</span></div>`;
-    html += `<div class="card"><div class="section-title" style="margin-top:0">How to use</div><p class="small">Type any Latin word <i>in any form</i> (e.g. <span class="kbd">amīcōrum</span>, <span class="kbd">tulisti</span>, <span class="kbd">puellaeque</span>), or an English word (<span class="kbd">friend</span>, <span class="kbd">to fight</span>) to find the Latin words that mean it. Tap the <span class="ibtn" style="pointer-events:none">i</span> next to any case or tense to see what it means, with example sentences of the same word type as the one you looked up.</p><p class="small">Macrons, j/v and i/u are optional when searching.</p></div>`;
-    if (hist.length) html += `<div class="section-title">Recent</div><div class="pill-row">${hist.map(h => `<a class="chip la" href="#/w/${encodeURIComponent(h.nk)}">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</a>`).join('')}</div>`;
-    if (favs.length) html += `<div class="section-title">Saved</div><div class="pill-row">${favs.map(h => `<a class="chip la" href="#/w/${encodeURIComponent(h.nk)}">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</a>`).join('')}</div>`;
-    html += `<div class="section-title">Grammar quick links</div><div class="pill-row">${['N-1-F', 'N-2-M', 'N-2-N', 'N-3-M', 'N-3-N', 'N-4-M', 'N-5-F', 'ADJ-1-2', 'ADJ-3-2', 'V-1', 'V-2', 'V-3', 'V-3IO', 'V-4', 'V-SUM', 'PRON-HIC', 'PRON-QUI'].filter(id => PACKS_ALL[id]).map(id => `<a class="chip" href="#/p/${id}">${esc(PACKS_ALL[id].title)}</a>`).join('')}</div>`;
-    html += `<footer class="credits">Definitions: <b>A Latin Dictionary</b> by Charlton T. Lewis &amp; Charles Short (1879), digitised by the Perseus Digital Library (CC BY-SA 4.0). Stems, inflections and short glosses: <b>Whitaker's Words</b> (William Whitaker, public domain). ${Data.meta ? `${Data.meta.headwords.toLocaleString()} headwords · ${Data.meta.ls.toLocaleString()} Lewis &amp; Short entries · ${Data.meta.ww.toLocaleString()} Whitaker entries.` : ''}</footer>`;
+  const TIPS = ['Search any inflected form: amāverat, tulistī, puellaeque all find their dictionary word.', 'Tap the small (i) beside a case or tense to see what it does, with a sentence using a word of the same class as yours.', 'Macrons, i/j and u/v are optional when searching: amicus, amīcus and amicvs all work.', 'The enclitic -que ("and") is attached to the second of two words: senātus populusque.', 'Type an English word to go from English to Latin: "friend", "to fight", "kings".', 'Deponent verbs look passive but mean active: sequor "I follow", secūtus sum "I followed".', 'Settings → Download all stores the whole dictionary on your phone for use without a connection.', 'A neuter noun has identical nominative and accusative; in the plural both end in -a.', 'The genitive singular tells you the declension: -ae, -ī, -is, -ūs, -ēī.', 'Long entries in Lewis & Short are abridged to three lines per sense; tap "more" to unfold one, or switch it off in Settings.', 'Save a word with ☆ at the top of its entry; saved words and your history live in the Saved tab.', 'Each paradigm page in Grammar gives a sentence for every single form of its model word.'];
+  const ICONS = {
+    noun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14"/><path d="M4 20h16M8 8h8M8 12h8M8 16h5"/></svg>',
+    adj: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18L10 4l6 14M6.5 13h7"/><path d="M17 10l3 3-3 3"/></svg>',
+    pron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><path d="M17 5l4 4M21 5l-4 4"/></svg>',
+    verb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h11"/><path d="M10 7l5 5-5 5"/><path d="M17 5v14"/><path d="M21 5v14"/></svg>',
+    syntax: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h13"/><circle cx="19" cy="12" r="2"/></svg>',
+    ref: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M14 4v5h5M8 13h8M8 17h6"/></svg>',
+    dice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2" fill="currentColor"/><circle cx="15" cy="15" r="1.2" fill="currentColor"/><circle cx="15" cy="9" r="1.2" fill="currentColor"/><circle cx="9" cy="15" r="1.2" fill="currentColor"/></svg>',
+  };
+  const GROUP_INFO = { 'Nouns': ['noun', 'Five declensions, every case', 'Nouns'], 'Adjectives & Adverbs': ['adj', 'Agreement and the three degrees', 'Adjectives'], 'Pronouns': ['pron', 'ego, hic, ille, is, quī and friends', 'Pronouns'], 'Verbs': ['verb', 'Conjugations, tenses, moods, deponents, irregulars', 'Verbs'], 'Syntax': ['syntax', 'Ablative absolute, indirect statement, cum clauses, conditions…', 'Syntax'], 'Reference': ['ref', 'Reading an entry, abbreviations', 'Reference'] };
+  async function renderHome() {
+    const day = Math.floor(Date.now() / 86400000); const w = WOTD[day % WOTD.length]; const tip = TIPS[day % TIPS.length];
+    const hist = S.history.slice(0, 12), favs = S.favs.slice(0, 12);
+    let html = `<div class="card hero-card" id="wotd"><div class="wotd-head"><span class="section-title" style="margin:0">Word of the day</span><a class="btn small" href="#/w/${WOTD[Math.floor(Math.random() * WOTD.length)]}">${ICONS.dice.replace('<svg', '<svg width="16" height="16" style="vertical-align:-3px;margin-right:4px"')}Random</a></div><a class="wotd-hw" href="#/w/${w}">${esc(w)}</a><div class="skel" style="width:60%"></div></div>`;
+    const mini = h => `<a class="mini" href="#/w/${encodeURIComponent(h.nk)}"><span class="hw">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</span><span class="gl">${esc(h.gl || '')}</span></a>`;
+    if (hist.length) html += `<div class="section-title">Recent</div><div class="hscroll">${hist.map(mini).join('')}</div>`;
+    if (favs.length) html += `<div class="section-title">Saved</div><div class="hscroll">${favs.map(mini).join('')}</div>`;
+    html += `<div class="section-title">Grammar</div><div class="tiles">${Object.entries(GROUP_INFO).map(([g, [ic, d, short]]) => `<a class="tile" href="#/gg/${encodeURIComponent(g)}">${ICONS[ic]}<b>${esc(short)}</b><span>${esc(d)}</span></a>`).join('')}</div>`;
+    html += `<div class="card tip"><div class="k">Tip</div>${esc(tip)}</div>`;
+    html += `<footer class="credits">Definitions: <b>A Latin Dictionary</b> by Charlton T. Lewis &amp; Charles Short (1879), digitised by the Perseus Digital Library (CC BY-SA 4.0). Stems, inflections and short glosses: <b>Whitaker's Words</b> (public domain). ${Data.meta ? `${Data.meta.headwords.toLocaleString()} headwords · ${Data.meta.ls.toLocaleString()} Lewis &amp; Short entries · ${Data.meta.ww.toLocaleString()} Whitaker entries.` : ''}</footer>`;
     view.innerHTML = html;
+    try {
+      await Data.ready; const rec = await idxRecord(norm(w)); const box = $('#wotd'); if (!box || !rec) return;
+      box.querySelector('.wotd-hw').textContent = S.settings.macrons ? rec[1] : strip(rec[1]);
+      box.querySelector('.skel').outerHTML = `<div class="muted small">${esc(rec[2].split(',').map(p => CORE.pos[p] || p.toLowerCase()).join(', '))}</div><div class="wotd-gl">${esc(rec[3])}</div><a class="btn primary" href="#/w/${w}">Open entry</a>`;
+    } catch (e) { }
   }
-  function pushHistory(nk, hw) { S.history = [{ nk, hw }].concat(S.history.filter(h => h.nk !== nk)).slice(0, 100); save('history', S.history); }
+  function pushHistory(nk, hw, gl) { S.history = [{ nk, hw, gl }].concat(S.history.filter(h => h.nk !== nk)).slice(0, 100); save('history', S.history); }
   function renderSaved() {
     let html = `<h1>Saved words</h1>`;
     html += S.favs.length ? `<div class="results">${S.favs.map(h => `<a class="row" href="#/w/${encodeURIComponent(h.nk)}"><span class="hw">${esc(S.settings.macrons ? h.hw : strip(h.hw))}</span></a>`).join('')}</div>` : `<div class="empty">Tap ☆ on a word to save it here.</div>`;
@@ -387,6 +414,7 @@
     view.innerHTML = `<h1>Settings</h1>
       <div class="setting"><div><b>Macrons</b><div class="d">Mark long vowels (ā ē ī ō ū) in headwords and tables.</div></div><button class="btn ${s.macrons ? 'on' : ''}" data-set="macrons">${s.macrons ? 'On' : 'Off'}</button></div>
       <div class="setting"><div><b>Rare &amp; archaic forms</b><div class="d">Show poetic, archaic and late variants (greyed) and the locative.</div></div><button class="btn ${s.rare ? 'on' : ''}" data-set="rare">${s.rare ? 'On' : 'Off'}</button></div>
+      <div class="setting"><div><b>Abridged Lewis &amp; Short</b><div class="d">Show each sense trimmed to three lines with a "more" link; long entries become readable at a glance.</div></div><button class="btn ${s.abridge ? 'on' : ''}" data-set="abridge">${s.abridge ? 'On' : 'Off'}</button></div>
       <div class="setting"><div><b>Citations in Lewis &amp; Short</b><div class="d">Show the quotations and author references by default.</div></div><button class="btn ${s.cit ? 'on' : ''}" data-set="cit">${s.cit ? 'On' : 'Off'}</button></div>
       <h2>Theme</h2><div class="swatches">${SKINS.map(([id, name, desc]) => `<button class="swatch ${s.theme === id ? 'on' : ''}" data-skin="${id}" title="${esc(desc)}"><div class="pv" style="background:${SKIN_PREVIEW[id][0]};color:${SKIN_PREVIEW[id][1]}">Aa āē</div><div class="nm">${esc(name)}</div></button>`).join('')}</div>
       <h2>Typeface</h2><div class="fontpick">${[['mixed', 'Mixed', 'EB Garamond for Latin, system sans for the rest'], ['serif', 'Serif', 'EB Garamond everywhere'], ['sans', 'Sans', 'System sans everywhere']].map(([id, name, desc]) => `<button class="${s.font === id ? 'on' : ''}" data-font="${id}"><span class="big" style="font-family:${id === 'sans' ? 'var(--sans-stack)' : 'var(--serif-stack)'}">${esc(name)} · amīcus</span><span class="sm">${esc(desc)}</span></button>`).join('')}</div>
@@ -411,8 +439,8 @@
     if (btn) btn.textContent = 'Done';
     toast('All data downloaded for offline use');
   }
-  const SKINS = [['auto', 'Automatic', 'Parchment by day, Night in dark mode'], ['parchment', 'Parchment', 'Warm cream and oxblood'], ['night', 'Night', 'Dark, warm neutrals'], ['navy', 'Navy Neon', 'Deep blue with neon mint'], ['peach', 'Peach', 'Soft apricot and terracotta'], ['blush', 'Blush', 'Rose pink'], ['sage', 'Sage', 'Cool greens'], ['ember', 'Ember', 'Charcoal with amber']];
-  const SKIN_PREVIEW = { auto: ['#f6f1e7', '#8b2e2e'], parchment: ['#f6f1e7', '#8b2e2e'], night: ['#1b1a17', '#e08a8a'], navy: ['#0a1730', '#3dffc6'], peach: ['#fff0e4', '#df6b35'], blush: ['#fceff4', '#d4336e'], sage: ['#edf3ea', '#2e6b4e'], ember: ['#1d1a1f', '#ff9d3f'] };
+  const SKINS = [['auto', 'Automatic', 'Parchment by day, Night in dark mode'], ['parchment', 'Parchment', 'Warm cream and oxblood'], ['night', 'Night', 'Dark, warm neutrals'], ['navy', 'Navy Neon', 'Deep blue with neon mint'], ['peach', 'Peach', 'Soft apricot and terracotta'], ['blush', 'Blush', 'Rose pink'], ['sage', 'Sage', 'Cool greens'], ['ember', 'Ember', 'Charcoal with amber'], ['rustic', 'Rustic', 'Parchment, Roman capitals, sketched icons'], ['illustrata', 'Illustrata', 'Orange and white, in the manner of a well-known Latin course']];
+  const SKIN_PREVIEW = { auto: ['#f6f1e7', '#8b2e2e'], parchment: ['#f6f1e7', '#8b2e2e'], night: ['#1b1a17', '#e08a8a'], navy: ['#0a1730', '#3dffc6'], peach: ['#fff0e4', '#df6b35'], blush: ['#fceff4', '#d4336e'], sage: ['#edf3ea', '#2e6b4e'], ember: ['#1d1a1f', '#ff9d3f'], rustic: ['#ece0c4', '#7a3b1e'], illustrata: ['#e0702f', '#ffffff'] };
   function applyTheme() {
     const r = document.documentElement; const t = S.settings.theme;
     if (t === 'auto' || t === 'light' || t === 'dark') { delete r.dataset.skin; if (t === 'light' || t === 'dark') { S.settings.theme = t === 'light' ? 'parchment' : 'night'; r.dataset.skin = S.settings.theme; } }
@@ -425,13 +453,19 @@
 
   // ---------------- grammar ----------------
   const GRAM = typeof GRAMMAR !== 'undefined' ? GRAMMAR : [];
-  function renderGrammarIndex() {
+  const PACK_GROUP = { 'Nouns': id => id.startsWith('N-'), 'Adjectives & Adverbs': id => id.startsWith('ADJ-') || id === 'ADV', 'Verbs': id => id.startsWith('V-'), 'Pronouns': id => id.startsWith('PRON') || id === 'NUM' };
+  const blurb = c => c.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 110).replace(/\s\S*$/, '') + '…';
+  function renderGrammarIndex(only) {
     const groups = {}; for (const c of GRAM) (groups[c.group] = groups[c.group] || []).push(c);
-    let html = `<h1>Grammar</h1><p class="small muted">Reference chapters, plus a paradigm page for every declension and conjugation with example sentences for each form.</p>`;
-    for (const g in groups) html += `<div class="section-title">${esc(g)}</div><div class="chapters">${groups[g].map(c => `<a href="#/g/${c.id}">${esc(c.title)}</a>`).join('')}</div>`;
-    const packGroups = [['Nouns', id => id.startsWith('N-')], ['Adjectives', id => id.startsWith('ADJ-')], ['Verbs', id => id.startsWith('V-')], ['Pronouns & numerals', id => id.startsWith('PRON') || id === 'NUM' || id === 'ADV']];
-    html += `<h2>Paradigms</h2>`;
-    for (const [title, pred] of packGroups) { const ids = Object.keys(PACKS_ALL).filter(pred); if (!ids.length) continue; html += `<div class="section-title">${title}</div><div class="chapters">${ids.map(id => `<a href="#/p/${id}">${esc(PACKS_ALL[id].title)}<span class="muted la">${esc(PACKS_ALL[id].model ? PACKS_ALL[id].model.hw + (PACKS_ALL[id].model.parts ? ', ' + PACKS_ALL[id].model.parts.replace(/^[^,]*,\s*/, '') : '') : '')}</span></a>`).join('')}</div>`; }
+    let html = only ? `<p class="small muted"><a href="#/g">Grammar</a></p><h1>${esc(only)}</h1>` : `<h1>Grammar</h1><p class="small muted">Chapters to read, and a paradigm page for every declension and conjugation with a sentence for each form.</p>`;
+    for (const g in groups) {
+      if (only && g !== only) continue;
+      const info = GROUP_INFO[g] || ['ref', '', g];
+      html += `<section class="gsec"><h2>${ICONS[info[0]]}${esc(g)}</h2>`;
+      const pred = PACK_GROUP[g]; const ids = pred ? Object.keys(PACKS_ALL).filter(pred) : [];
+      if (ids.length) html += `<div class="section-title" style="margin-top:6px">Paradigms</div><div class="paras">${ids.map(id => `<a href="#/p/${id}">${esc(PACKS_ALL[id].title.replace(/\s*\(.*\)$/, ''))}<span class="la">${esc(PACKS_ALL[id].model ? PACKS_ALL[id].model.hw : '')}</span></a>`).join('')}</div>`;
+      html += `<div class="section-title" style="margin-top:4px">Chapters</div><div class="chapters">${groups[g].map(c => `<a href="#/g/${c.id}">${esc(c.title)}<span class="muted">${esc(blurb(c))}</span></a>`).join('')}</div></section>`;
+    }
     view.innerHTML = html;
   }
   function renderChapter(id) {
@@ -543,7 +577,7 @@
   function setTab(name) { document.querySelectorAll('#tabs a').forEach(a => a.classList.toggle('active', a.dataset.tab === name)); }
   async function route() {
     const h = location.hash || '#/';
-    const m = h.match(/^#\/(w|g|p|s)?\/?([^?]*)(\?(.*))?$/);
+    const m = h.match(/^#\/(gg|w|g|p|s)?\/?([^?]*)(\?(.*))?$/);
     const kind = m && m[1], arg = m ? decodeURIComponent(m[2] || '') : '', qs = m && m[4] ? new URLSearchParams(m[4]) : null;
     $('#back').hidden = h === '#/' || h === '#/g' || h === '#/saved' || h === '#/settings';
     closeSheet();
@@ -555,6 +589,7 @@
       else if (kind === 'w') { setTab('home'); await renderWord(norm(arg), qs && qs.get('f') ? norm(qs.get('f')) : null); }
       else if (kind === 's') { setTab('home'); $('#q').value = arg; $('#clearq').hidden = !arg; await doSearch(arg); }
       else if (h === '#/g') { setTab('grammar'); renderGrammarIndex(); window.scrollTo(0, 0); }
+      else if (kind === 'gg') { setTab('grammar'); renderGrammarIndex(arg); window.scrollTo(0, 0); }
       else if (kind === 'g') { setTab('grammar'); renderChapter(arg); }
       else if (kind === 'p') { setTab('grammar'); renderPack(arg); }
       else if (h === '#/saved') { setTab('saved'); renderSaved(); }
@@ -570,8 +605,9 @@
   document.addEventListener('click', ev => {
     const ib = ev.target.closest('.ibtn'); if (ib && ib.dataset.info) { ev.preventDefault(); showInfo(JSON.parse(ib.dataset.info)); return; }
     const tb = ev.target.closest('.subtabs button'); if (tb) { const grp = tb.parentElement; grp.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === tb)); grp.querySelectorAll('button').forEach(b => { const pane = document.getElementById(b.dataset.show); if (pane) pane.hidden = b !== tb; }); return; }
-    const tc = ev.target.closest('.togglecit'); if (tc) { const ls = tc.closest('details').querySelector('.ls'); ls.classList.toggle('nocit'); tc.textContent = ls.classList.contains('nocit') ? 'Show citations' : 'Hide citations'; return; }
-    const fv = ev.target.closest('.fav'); if (fv) { const nk = fv.dataset.nk, hw = fv.dataset.hw; if (S.favs.some(f => f.nk === nk)) { S.favs = S.favs.filter(f => f.nk !== nk); fv.textContent = '☆'; toast('Removed from saved'); } else { S.favs.unshift({ nk, hw }); fv.textContent = '★'; toast('Saved'); } save('favs', S.favs); return; }
+    const tc = ev.target.closest('.togglecit'); if (tc) { const ls = tc.closest('details').querySelector('.ls'); ls.classList.toggle('nocit'); tc.textContent = ls.classList.contains('nocit') ? 'Show citations' : 'Hide citations'; applyClamps(); return; }
+    const ta = ev.target.closest('.toggleabr'); if (ta) { const ls = ta.closest('details').querySelector('.ls'); ls.classList.toggle('abridged'); ta.textContent = ls.classList.contains('abridged') ? 'Show full entry' : 'Abridge'; applyClamps(); return; }
+    const fv = ev.target.closest('.fav'); if (fv) { const nk = fv.dataset.nk, hw = fv.dataset.hw; if (S.favs.some(f => f.nk === nk)) { S.favs = S.favs.filter(f => f.nk !== nk); fv.textContent = '☆'; toast('Removed from saved'); } else { const hh = S.history.find(h => h.nk === nk); S.favs.unshift({ nk, hw, gl: hh ? hh.gl : '' }); fv.textContent = '★'; toast('Saved'); } save('favs', S.favs); return; }
     const dc = ev.target.closest('.decl'); if (dc) { showPplDecl(dc.dataset.ctx, dc.dataset.ppl); return; }
     if (ev.target.closest('.sheet-bg') || ev.target.closest('.sheet-close')) closeSheet();
     const q = ev.target.closest('.ls q'); if (q && !ev.target.closest('a')) { /* tap a Latin quotation word to look it up */ }
