@@ -441,7 +441,7 @@
     if (btn) btn.textContent = 'Done';
     toast('All data downloaded for offline use');
   }
-  const SKINS = [['auto', 'Automatic', 'Parchment by day, Night in dark mode'], ['parchment', 'Parchment', 'Warm cream and oxblood'], ['night', 'Night', 'Dark, warm neutrals'], ['navy', 'Navy Neon', 'Deep blue with neon mint'], ['peach', 'Peach', 'Soft apricot and terracotta'], ['blush', 'Blush', 'Rose pink'], ['sage', 'Sage', 'Cool greens'], ['ember', 'Ember', 'Charcoal with amber'], ['rustic', 'Rustic', 'Parchment, Roman capitals, sketched icons'], ['illustrata', 'Illustrata', 'Orange and white, in the manner of a well-known Latin course']];
+  const SKINS = [['auto', 'Automatic', 'Parchment by day, Night in dark mode'], ['parchment', 'Parchment', 'Warm cream and oxblood'], ['night', 'Night', 'Dark, warm neutrals'], ['navy', 'Navy Neon', 'Deep blue with neon mint'], ['peach', 'Peach', 'Soft apricot and terracotta'], ['blush', 'Blush', 'Rose pink'], ['sage', 'Sage', 'Cool greens'], ['ember', 'Ember', 'Charcoal with amber'], ['rustic', 'Rustic', 'Parchment, Roman capitals, sketched icons'], ['illustrata', 'Per Se', 'Orange and white, in the manner of a well-known Latin course']];
   const SKIN_PREVIEW = { auto: ['#f6f1e7', '#8b2e2e'], parchment: ['#f6f1e7', '#8b2e2e'], night: ['#1b1a17', '#e08a8a'], navy: ['#0a1730', '#3dffc6'], peach: ['#fff0e4', '#df6b35'], blush: ['#fceff4', '#d4336e'], sage: ['#edf3ea', '#2e6b4e'], ember: ['#1d1a1f', '#ff9d3f'], rustic: ['#ece0c4', '#7a3b1e'], illustrata: ['#e0702f', '#ffffff'] };
   function applyTheme() {
     const r = document.documentElement; const t = S.settings.theme;
@@ -581,7 +581,6 @@
     const h = location.hash || '#/';
     const m = h.match(/^#\/(gg|w|g|p|s)?\/?([^?]*)(\?(.*))?$/);
     const kind = m && m[1], arg = m ? decodeURIComponent(m[2] || '') : '', qs = m && m[4] ? new URLSearchParams(m[4]) : null;
-    $('#back').hidden = h === '#/' || h === '#/g' || h === '#/saved' || h === '#/settings';
     closeSheet();
     try {
       if (h === '#/' || h === '') { setTab('home'); $('#q').value = ''; $('#clearq').hidden = true; renderHome(); }
@@ -600,10 +599,10 @@
     } catch (err) { console.error(err); view.innerHTML = `<div class="empty">Something went wrong loading this page.<br><span class="small">${esc(err.message)}</span></div>`; }
   }
   window.addEventListener('hashchange', () => { const h = location.hash || '#/'; if (!navStack._back && navStack[navStack.length - 1] !== h) navStack.push(h); navStack._back = false; route(); });
-  $('#q').addEventListener('input', ev => { const q = ev.target.value; $('#clearq').hidden = !q; clearTimeout(searchTimer); searchTimer = setTimeout(() => { if (!q.trim()) { if (location.hash.startsWith('#/s/')) location.hash = '#/'; else if (location.hash === '#/' || location.hash === '') renderHome(); return; } history.replaceState(null, '', '#/s/' + encodeURIComponent(q)); noteSearchHash('#/s/' + encodeURIComponent(q)); setTab('home'); $('#back').hidden = false; doSearch(q); }, 160); });
+  $('#q').addEventListener('input', ev => { const q = ev.target.value; $('#clearq').hidden = !q; clearTimeout(searchTimer); searchTimer = setTimeout(() => { if (!q.trim()) { if (location.hash.startsWith('#/s/')) location.hash = '#/'; else if (location.hash === '#/' || location.hash === '') renderHome(); return; } history.replaceState(null, '', '#/s/' + encodeURIComponent(q)); noteSearchHash('#/s/' + encodeURIComponent(q)); setTab('home'); doSearch(q); }, 160); });
   $('#searchform').addEventListener('submit', ev => { ev.preventDefault(); const q = $('#q').value.trim(); if (!q) return; $('#q').blur(); const first = view.querySelector('.results .row'); if (first && (norm(q) === (first.getAttribute('href') || '').replace(/^#\/w\//, '').split('?')[0] || view.querySelectorAll('.results .row').length === 1)) location.hash = first.getAttribute('href'); else { history.replaceState(null, '', '#/s/' + encodeURIComponent(q)); noteSearchHash('#/s/' + encodeURIComponent(q)); doSearch(q); } });
   $('#clearq').onclick = () => { $('#q').value = ''; $('#clearq').hidden = true; $('#q').focus(); location.hash = '#/'; };
-  $('#back').onclick = () => { navStack.pop(); const prev = navStack.pop(); navStack._back = false; if (prev) { navStack.push(prev); navStack._back = true; location.hash = prev; } else location.hash = '#/'; };
+  const backBtn = $('#back'); if (backBtn) backBtn.onclick = () => { navStack.pop(); const prev = navStack.pop(); navStack._back = false; if (prev) { navStack.push(prev); navStack._back = true; location.hash = prev; } else location.hash = '#/'; };
   document.addEventListener('click', ev => {
     const ib = ev.target.closest('.ibtn'); if (ib && ib.dataset.info) { ev.preventDefault(); showInfo(JSON.parse(ib.dataset.info)); return; }
     const tb = ev.target.closest('.subtabs button'); if (tb) { const grp = tb.parentElement; grp.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === tb)); grp.querySelectorAll('button').forEach(b => { const pane = document.getElementById(b.dataset.show); if (pane) pane.hidden = b !== tb; }); return; }
