@@ -299,18 +299,20 @@
     pushHistory(nk, hw, rec ? rec[3] : '');
     const fav = S.favs.some(f => f.nk === nk);
     let html = `<div class="hwline" style="justify-content:space-between"><h1 class="la" style="margin:4px 0">${esc(S.settings.macrons ? hw : strip(hw))}</h1><button class="iconbtn fav" data-nk="${esc(nk)}" data-hw="${esc(hw)}" aria-label="Save">${fav ? '★' : '☆'}</button></div>`;
-    // pair L&S entries with Whitaker entries by part of speech
+    // pair L&S entries with Whitaker entries by part of speech; homonyms of the same class pair one-to-one in order
     const used = new Set();
     const groups = [];
-    const lsSorted = lsList.slice().sort((a, b) => (a.t === 'main' ? 0 : 1) - (b.t === 'main' ? 0 : 1) || (a.n || '0').localeCompare(b.n || '0'));
-    for (const e of entries) {
-      const ep = e.p === 'PACK' ? 'PRON' : e.p;
-      const mine = lsSorted.filter(l => !used.has(l.k) && lsPosClass(l) === ep);
-      mine.forEach(l => used.add(l.k));
-      groups.push({ e, ls: mine });
+    const lsSorted = lsList.slice().sort((a, b) => (a.t === 'main' ? 0 : 1) - (b.t === 'main' ? 0 : 1) || (a.n || '0').localeCompare(b.n || '0', undefined, { numeric: true }));
+    const byClass = {};
+    for (const e of entries) { const ep = e.p === 'PACK' ? 'PRON' : e.p; (byClass[ep] = byClass[ep] || []).push(e); }
+    for (const ep in byClass) {
+      const es = byClass[ep]; const ls = lsSorted.filter(l => !used.has(l.k) && lsPosClass(l) === ep);
+      if (ls.length === es.length && es.length > 1) es.forEach((e, i) => { groups.push({ e, ls: [ls[i]] }); used.add(ls[i].k); });
+      else { es.forEach((e, i) => groups.push({ e, ls: i === 0 ? ls : [] })); ls.forEach(l => used.add(l.k)); }
     }
-    // L&S entries whose part of speech could not be read: attach to the first group lacking one, else the first group
-    for (const l of lsSorted) { if (used.has(l.k) || lsPosClass(l) !== '') continue; const g = groups.find(x => !x.ls.length) || groups[0]; if (g) { g.ls.push(l); g.ls.sort((a, b) => (a.n || '0').localeCompare(b.n || '0')); used.add(l.k); } }
+    for (const l of lsSorted) { if (used.has(l.k) || lsPosClass(l) !== '') continue; const g = groups.find(x => !x.ls.length) || groups[0]; if (g) { g.ls.push(l); g.ls.sort((a, b) => (a.n || '0').localeCompare(b.n || '0', undefined, { numeric: true })); used.add(l.k); } }
+    const frank = e => { const i = 'ABCDEFXIMN'.indexOf((e.f || 'X')[3]); return i < 0 ? 9 : i; };
+    groups.sort((a, b) => frank(a.e) - frank(b.e));
     const rest = lsSorted.filter(l => !used.has(l.k));
     for (const g of groups) html += entryCard(g.e, g.ls, hlForm);
     for (const l of rest.filter(l => !used.has(l.k))) html += `<div class="card">${lsHTML(l)}</div>`;
