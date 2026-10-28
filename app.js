@@ -1,7 +1,7 @@
 /* Lexicon Latinum — app logic */
 (function () {
   'use strict';
-  const APP_BUILD = '2026-10-28.0239';
+  const APP_BUILD = '2026-10-28.0241';
   const $ = s => document.querySelector(s);
   const view = $('#view');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -533,8 +533,49 @@
     view.innerHTML = html; window.scrollTo(0, 0);
     $('#trbtn').onclick = () => { const ps = $('#passage'); ps.classList.toggle('showtr'); $('#trbtn').textContent = ps.classList.contains('showtr') ? 'Hide translation' : 'Show translation'; };
     $('#donebtn').onclick = () => { const r = load('read', { done: [], last: null }); if (r.done.includes(id)) r.done = r.done.filter(x => x !== id); else r.done.push(id); save('read', r); const on = r.done.includes(id); $('#donebtn').textContent = on ? 'Read ✓' : 'Mark as read'; $('#donebtn').classList.toggle('on', on); if (on) toast('Marked as read'); };
-    $('#passage').onclick = ev => { const w = ev.target.closest('.w'); if (!w) return; $('#passage').querySelectorAll('.w.on').forEach(x => x.classList.remove('on')); w.classList.add('on'); quickGloss(w.dataset.w); };
+    $('#passage').onclick = ev => { const w = ev.target.closest('.w'); if (!w) return; ev.stopPropagation(); $('#passage').querySelectorAll('.w.on').forEach(x => x.classList.remove('on')); w.classList.add('on'); wordPop(w); };
   }
+  async function glossData(word) {
+    await Data.ready; const nq = norm(word); const L = letterOf(nq);
+    const [arr, wIdx] = await Promise.all([idx(L), wwIndex(L)]);
+    const an = Morph.analyze(nq, wIdx); const byEntry = new Map();
+    for (const a of an) { const k = a.entry.i; if (!byEntry.has(k)) byEntry.set(k, { e: a.entry, descs: [], enc: a.enclitic, common: a.common, rank: 'ABCDEFXIMN'.indexOf((a.entry.f || 'X')[3]) }); const g = byEntry.get(k); const d = Morph.describe(a.r); if (!g.descs.includes(d)) g.descs.push(d); if (a.common) g.common = true; }
+    const list = [...byEntry.values()].sort((a, b) => (b.common - a.common) || (a.rank - b.rank) || ((a.enc ? 1 : 0) - (b.enc ? 1 : 0)));
+    const exact = arr.find(r => r[0] === nq);
+    return { nq, list, exact };
+  }
+  let popEl = null;
+  function closePop() { if (popEl) { popEl.remove(); popEl = null; } view.querySelectorAll('.passage .w.on').forEach(x => x.classList.remove('on')); }
+  async function wordPop(wEl) {
+    const word = wEl.dataset.w;
+    if (!popEl) { popEl = document.createElement('div'); popEl.id = 'pop'; document.body.appendChild(popEl); popEl.addEventListener('click', ev => ev.stopPropagation()); }
+    popEl.innerHTML = `<div class="ph"><span class="phw">${esc(word)}</span></div><div class="skel" style="width:70%;margin:6px 0 2px"></div>`;
+    placePop(wEl);
+    const token = (popEl._t = (popEl._t || 0) + 1);
+    try {
+      const { nq, list, exact } = await glossData(word);
+      if (!popEl || popEl._t !== token) return;
+      let html;
+      if (list.length) {
+        const g = list[0]; const nk = norm(g.e.hw); const gl = (g.e.m || '').replace(/^\|+/, '').split(';').slice(0, 2).join(';');
+        html = `<div class="ph"><span class="phw">${esc(macHw(g.e))}${g.enc ? ` <span class="chip">+${esc(g.enc)}</span>` : ''}</span><a class="pgo" href="#/w/${encodeURIComponent(nk)}?f=${encodeURIComponent(nq)}">Entry ›</a></div><div class="pgl">${esc(gl)}</div><div class="pgr"><b>${esc(g.descs.slice(0, 2).join('; '))}</b> · ${esc(classLabel(g.e))}${list.length > 1 ? `<span class="palt">or <a href="#/w/${encodeURIComponent(norm(list[1].e.hw))}?f=${encodeURIComponent(nq)}">${esc(macHw(list[1].e))}</a>, ${esc(list[1].descs[0])}</span>` : ''}</div>`;
+      } else if (exact) html = `<div class="ph"><span class="phw">${esc(exact[1])}</span><a class="pgo" href="#/w/${encodeURIComponent(exact[0])}">Entry ›</a></div><div class="pgl">${esc(exact[3])}</div>`;
+      else html = `<div class="ph"><span class="phw">${esc(word)}</span><a class="pgo" href="#/s/${encodeURIComponent(nq)}">Search ›</a></div><div class="pgl muted">Not found as a form; perhaps a name or a variant spelling.</div>`;
+      popEl.innerHTML = html; placePop(wEl);
+      requestAnimationFrame(() => { const g = popEl && popEl.querySelector('.pgr'); if (g) g.classList.add('in'); });
+    } catch (e) { if (popEl) popEl.innerHTML = `<div class="pgl muted">Could not look that up.</div>`; }
+  }
+  function placePop(wEl) {
+    const r = wEl.getBoundingClientRect(); const pw = popEl.offsetWidth || 300; const ph = popEl.offsetHeight || 80;
+    const vw = document.documentElement.clientWidth; const headerH = ($('#top') ? $('#top').getBoundingClientRect().bottom : 0);
+    let left = r.left + r.width / 2 - pw / 2; left = Math.max(12, Math.min(vw - pw - 12, left));
+    const above = r.top - headerH > ph + 14;
+    const top = above ? r.top + window.scrollY - ph - 10 : r.bottom + window.scrollY + 10;
+    popEl.style.left = left + 'px'; popEl.style.top = top + 'px'; popEl.className = above ? 'above' : 'below';
+    popEl.style.setProperty('--ax', (r.left + r.width / 2 - left) + 'px');
+  }
+  document.addEventListener('click', ev => { if (popEl && !ev.target.closest('.passage .w')) closePop(); });
+  window.addEventListener('hashchange', closePop);
   async function quickGloss(word) {
     const body = $('#sheet .sheet-body'); body.innerHTML = `<div class="gloss-hw">${esc(word)}</div><div class="skel" style="width:50%"></div><div class="skel"></div>`; $('#sheet').hidden = false; document.body.style.overflow = 'hidden';
     try {

@@ -48,10 +48,7 @@ header#top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;backgroun
 /* rustic structure */
 :root[data-skin="rustic"] body{background-color:var(--bg);background-image:radial-gradient(ellipse at 20% 0%,rgba(255,250,235,.55),transparent 55%),radial-gradient(ellipse at 90% 100%,rgba(120,80,30,.12),transparent 50%)}
 :root[data-skin="rustic"]{--hdr:#ece0c4}
-:root[data-skin="rustic"] .brand-v{display:none}
-:root[data-skin="rustic"] .brand-u{display:inline;font-family:"Caveat","Bradley Hand","Segoe Script",cursive;font-weight:700;font-size:2rem;letter-spacing:.01em;color:#5a2a10;filter:url(#sketch);transform:rotate(-1.5deg);display:inline-block;text-shadow:0 1px 0 rgba(255,255,255,.4)}
-:root[data-skin="rustic"] nav#tabs a{font-family:"Caveat",cursive;font-size:.95rem}
-:root[data-skin="rustic"] .section-title{font-family:"Caveat",cursive;text-transform:none;letter-spacing:0;font-size:1.15rem}
+:root[data-skin="rustic"] .brand-v{color:#6b2f14;text-shadow:0 1px 0 rgba(255,255,255,.5)}
 :root[data-skin="rustic"] h1,:root[data-skin="rustic"] h2,:root[data-skin="rustic"] .section-title,:root[data-skin="rustic"] .hwline .hw,:root[data-skin="rustic"] .results .row .hw{font-family:var(--display);letter-spacing:.04em}
 :root[data-skin="rustic"] .card{border:1.5px solid #b89a66;border-radius:6px;background:linear-gradient(180deg,#f8f0dc,#f3e7cc)}
 :root[data-skin="rustic"] nav#tabs svg,:root[data-skin="rustic"] .iconbtn svg,:root[data-skin="rustic"] .tile svg{filter:url(#sketch);stroke-width:2.4}
@@ -348,3 +345,19 @@ table.para tr{transition:background .2s}
 .choices{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;position:sticky;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:3;background:color-mix(in srgb,var(--bg) 85%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);padding:8px 0;border-radius:14px}
 .choices button{font-family:var(--serif);font-size:1.05rem;padding:8px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg2);box-shadow:var(--shadow)}
 .choices button:active{transform:scale(.95)}
+
+/* word popover in the reader */
+#pop{position:absolute;z-index:40;width:min(300px,calc(100vw - 24px));background:color-mix(in srgb,var(--bg2) 92%,transparent);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.4);padding:10px 12px 9px;animation:popin .18s cubic-bezier(.2,.8,.3,1.2)}
+#pop::after{content:"";position:absolute;left:var(--ax,50%);width:12px;height:12px;background:inherit;border:1px solid var(--line);transform:translateX(-50%) rotate(45deg)}
+#pop.above::after{bottom:-7px;border-top:0;border-left:0}
+#pop.below::after{top:-7px;border-bottom:0;border-right:0}
+@keyframes popin{from{opacity:0;transform:translateY(4px) scale(.97)}to{opacity:1;transform:none}}
+#pop .ph{display:flex;align-items:baseline;gap:8px;justify-content:space-between}
+#pop .phw{font-family:var(--serif);font-size:1.25rem;font-weight:600}
+#pop .pgo{font-size:.78rem;color:var(--accent2);white-space:nowrap}
+#pop .pgl{font-size:.92rem;line-height:1.35;margin-top:2px}
+#pop .pgr{font-size:.78rem;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px solid var(--line);opacity:0;transition:opacity .45s ease .12s}
+#pop .pgr.in{opacity:1}
+#pop .pgr b{color:var(--accent2);font-weight:600}
+#pop .palt{display:block;margin-top:3px}
+@media (prefers-reduced-motion:reduce){#pop{animation:none}#pop .pgr{transition:none}}
