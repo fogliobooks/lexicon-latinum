@@ -1,6 +1,7 @@
 /* Lexicon Latinum — app logic */
 (function () {
   'use strict';
+  const APP_BUILD = '2026-10-28.0159';
   const $ = s => document.querySelector(s);
   const view = $('#view');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -422,6 +423,8 @@
       <h2>Typeface</h2><div class="fontpick">${[['mixed', 'Mixed', 'EB Garamond for Latin, system sans for the rest'], ['serif', 'Serif', 'EB Garamond everywhere'], ['sans', 'Sans', 'System sans everywhere']].map(([id, name, desc]) => `<button class="${s.font === id ? 'on' : ''}" data-font="${id}"><span class="big" style="font-family:${id === 'sans' ? 'var(--sans-stack)' : 'var(--serif-stack)'}">${esc(name)} · amīcus</span><span class="sm">${esc(desc)}</span></button>`).join('')}</div>
       <div class="setting"><div><b>Text size</b></div><input type="range" id="fs" min="14" max="22" step="1" value="${s.fs}"></div>
       <div class="setting"><div><b>Offline data</b><div class="d">Download the whole dictionary (about 80 MB) so lookups work without a connection. Looked-up words are cached automatically anyway.</div></div><button class="btn" id="dlall">Download all</button></div>
+      <div class="setting"><div><b>App version</b><div class="d">Build ${esc(APP_BUILD)}. The app checks for a newer version each time it opens and reloads itself when one is found.</div></div><button class="btn" id="chkupd">Check for updates</button></div>
+      <div class="setting"><div><b>Reload app</b><div class="d">Force a fresh copy of the app from the server (keeps your saved words and settings).</div></div><button class="btn" id="hardreload">Reload</button></div>
       <div class="setting"><div><b>Clear cached data</b><div class="d">Removes downloaded dictionary chunks (not your saved words).</div></div><button class="btn" id="clearcache">Clear</button></div>
       <h2>About</h2><p class="small">Lexicon Latinum combines <b>Lewis &amp; Short, A Latin Dictionary</b> (Oxford 1879; Perseus Digital Library edition, CC BY-SA 4.0) with the morphological data of <b>Whitaker's Words</b> (public domain). Every table is generated from Whitaker's stems and ending tables; vowel lengths on stems come from Lewis &amp; Short where the headwords match, and endings follow the standard quantities. Hidden quantities (as in rēxī) cannot be recovered automatically.</p><p class="small">Grammar notes and example sentences were written for this app and are keyed to the declension or conjugation of the word you look up.</p><p class="small muted">Data built ${Data.meta ? esc(Data.meta.built) : ''}.</p>`;
     view.querySelectorAll('[data-set]').forEach(b => b.onclick = () => { s[b.dataset.set] = !s[b.dataset.set]; save('settings', s); renderSettings(); });
@@ -429,6 +432,8 @@
     view.querySelectorAll('.fontpick button').forEach(b => b.onclick = () => { s.font = b.dataset.font; save('settings', s); applyTheme(); view.querySelectorAll('.fontpick button').forEach(x => x.classList.toggle('on', x === b)); });
     $('#fs').oninput = ev => { s.fs = +ev.target.value; save('settings', s); applyTheme(); };
     $('#dlall').onclick = downloadAll;
+    $('#chkupd').onclick = async () => { const b = $('#chkupd'); b.textContent = 'Checking…'; try { const r = await fetch('version.json', { cache: 'no-store' }).then(x => x.json()); if (r.build && r.build !== APP_BUILD) { toast('Update found, reloading…'); if (window.LX_REG) await window.LX_REG.update().catch(() => { }); setTimeout(() => location.reload(), 1200); return; } b.textContent = 'Up to date'; } catch (e) { b.textContent = 'Could not check'; } };
+    $('#hardreload').onclick = async () => { try { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); const rs = await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r => r.unregister())); } catch (e) { } location.reload(); };
     $('#clearcache').onclick = async () => { await DB.clear(); for (const k in mem) delete mem[k]; toast('Cache cleared'); };
   }
   async function downloadAll() {
@@ -622,7 +627,12 @@
   if (!window.LX_EMBEDDED && 'serviceWorker' in navigator) {
     let hadController = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) { toast('Updating to the latest version…'); setTimeout(() => location.reload(), 600); } hadController = true; });
-    navigator.serviceWorker.register('sw.js').then(reg => { setInterval(() => reg.update().catch(() => { }), 60 * 60 * 1000); }).catch(() => { });
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+      window.LX_REG = reg;
+      reg.update().catch(() => { });
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => { }); });
+      setInterval(() => reg.update().catch(() => { }), 30 * 60 * 1000);
+    }).catch(() => { });
   }
   navStack.push(location.hash || '#/');
   route();
